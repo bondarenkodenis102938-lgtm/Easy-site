@@ -453,184 +453,161 @@ export default {
    });
  }
 
- function renderKinoPage(videos, comments, requestUrl, userAgent) {
-   const url = new URL(requestUrl);
-   const isOldPhone = /Windows Phone|IEMobile/i.test(
-     String(userAgent || "")
-   );
+ 
+function renderKinoPage(videos, comments, requestUrl, userAgent) {
+  const isOldPhone = /Windows Phone|IEMobile/i.test(String(userAgent || ""));
+  let videoHtml = "";
 
-   let videoHtml = "";
+  if (!videos.length) {
+    videoHtml = "<p>Пока видео нет.</p>";
+  }
 
-   if (!videos.length) {
-     videoHtml = "<p>Пока видео нет.</p>";
-   }
+  for (const post of videos) {
+    const dateText = Number.isFinite(Number(post.created_at))
+      ? new Date(Number(post.created_at)).toLocaleString("ru-RU")
+      : "";
 
-   for (const post of videos) {
-     const dateText = Number.isFinite(Number(post.created_at))
-       ? new Date(Number(post.created_at)).toLocaleString("ru-RU")
-       : "";
+    const titleText = escapeHtml(
+      (post.body || "").slice(0, 120) || "Видео " + post.id
+    );
 
-     const titleText = escapeHtml(
-       (post.body || "").slice(0, 120) || "Видео " + post.id
-     );
+    videoHtml +=
+      '<section class="film">' +
+      '<h2>' + titleText + '</h2>' +
+      '<div class="film-date">' + escapeHtml(dateText) + '</div>';
 
-     videoHtml +=
-       '<section class="film">' +
-         '<h2>' + titleText + '</h2>' +
-         '<div class="film-date">' + escapeHtml(dateText) + '</div>';
+    if (post.media_key && post.media_type === "video") {
+      const mediaPath = "/media/" + encodeURIComponent(post.media_key);
+      const mime = videoMimeForKey(post.media_key);
 
-     if (post.media_key && post.media_type === "video") {
-       const mediaPath =
-         "/media/" + encodeURIComponent(post.media_key);
+      if (mime === "video/mp4") {
+        videoHtml +=
+          '<video class="film-video" id="film-' + Number(post.id) + '" controls preload="metadata">' +
+          '<source src="' + escapeHtml(mediaPath) + '" type="video/mp4">' +
+          'Ваш телефон не поддерживает HTML5-видео.' +
+          '</video>';
+      } else {
+        videoHtml +=
+          '<p>Формат этого файла рассчитан не на старый телефон.</p>';
+      }
 
-       videoHtml +=
-         '<video class="film-video" id="film-' + Number(post.id) + '"' +
-         ' controls preload="metadata" playsinline>' +
-         '<source src="' + escapeHtml(mediaPath) + '" type="video/mp4">' +
-         'Ваш телефон не поддерживает HTML5-видео.' +
-         '</video>' +
-         '<p><a href="' + escapeHtml(mediaPath) + '">Открыть MP4 отдельно</a></p>';
-     } else if (post.youtube_url) {
-       const youtubeId = extractYouTubeId(post.youtube_url);
+      videoHtml +=
+        '<p><a href="' + escapeHtml(mediaPath) + '">Открыть видео отдельно</a></p>';
+    }
 
-       if (!isOldPhone && youtubeId) {
-         const embed =
-           "https://www.youtube.com/embed/" +
-           encodeURIComponent(youtubeId) +
-           "?controls=1&playsinline=1&rel=0";
+    if (post.youtube_url) {
+      videoHtml +=
+        '<div class="old-video-note">' +
+        '<strong>YouTube</strong> — ' +
+        '<a href="' + escapeHtml(post.youtube_url) + '">Открыть видео</a>' +
+        '</div>';
+    }
 
-         videoHtml +=
-           '<iframe class="yt-frame" src="' + escapeHtml(embed) +
-           '" title="YouTube видео" frameborder="0" allowfullscreen></iframe>';
-       } else {
-         videoHtml +=
-           '<div class="old-video-note">' +
-           '<p><strong>YouTube-видео</strong></p>' +
-           '<p>На старом телефоне YouTube может не запускаться.</p>' +
-           '<p><a href="' + escapeHtml(post.youtube_url) +
-           '">Открыть видео на YouTube</a></p>' +
-           '</div>';
-       }
-     }
+    videoHtml += "</section>";
+  }
 
-     videoHtml += '</section>';
-   }
+  let commentsHtml = "";
 
-   let commentsHtml = "";
+  if (!comments.length) {
+    commentsHtml = "<p>Комментариев пока нет.</p>";
+  }
 
-   if (!comments.length) {
-     commentsHtml = "<p>Комментариев пока нет.</p>";
-   }
+  for (const comment of comments) {
+    const commentDate = Number.isFinite(Number(comment.created_at))
+      ? new Date(Number(comment.created_at)).toLocaleString("ru-RU")
+      : "";
 
-   for (const comment of comments) {
-     const commentDate = Number.isFinite(Number(comment.created_at))
-       ? new Date(Number(comment.created_at)).toLocaleString("ru-RU")
-       : "";
+    commentsHtml +=
+      '<div class="comment">' +
+      '<strong>' + escapeHtml(comment.author) + '</strong> ' +
+      '<span class="comment-date">' + escapeHtml(commentDate) + '</span>' +
+      '<div class="comment-body">' + escapeHtml(comment.body) + '</div>' +
+      '</div>';
+  }
 
-     commentsHtml +=
-       '<div class="comment">' +
-         '<strong>' + escapeHtml(comment.author) + '</strong>' +
-         '<span class="comment-date">' + escapeHtml(commentDate) + '</span>' +
-         '<div class="comment-body">' + escapeHtml(comment.body) + '</div>' +
-       '</div>';
-   }
+  const hint = isOldPhone
+    ? "Режим Lumia: простая страница без современного интерфейса."
+    : "Для старых телефонов лучше всего подходит MP4/H.264.";
 
-   const oldPhoneHint = isOldPhone
-     ? '<div class="compat">Режим совместимости для старого телефона включён.</div>'
-     : '<div class="compat">Для старых телефонов лучше всего подходит MP4/H.264.</div>';
+  const script =
+'(function(){' +
+  'function getCookie(name){' +
+    'var parts=document.cookie.split(";");' +
+    'var i;var item;' +
+    'for(i=0;i<parts.length;i++){' +
+      'item=parts[i].replace(/^\\s+/,"");' +
+      'if(item.indexOf(name+"=")===0){return decodeURIComponent(item.substring(name.length+1));}' +
+    '}' +
+    'return "";' +
+  '}' +
+  'function setCookie(name,value){' +
+    'var d=new Date();' +
+    'd.setTime(d.getTime()+31536000000);' +
+    'document.cookie=name+"="+encodeURIComponent(value)+"; expires="+d.toUTCString()+"; path=/kino";' +
+  '}' +
+  'var videos=document.getElementsByTagName("video");' +
+  'var i;' +
+  'for(i=0;i<videos.length;i++){' +
+    '(function(video){' +
+      'var key="lv_pos_"+video.id;' +
+      'video.addEventListener("loadedmetadata",function(){' +
+        'var saved=parseFloat(getCookie(key));' +
+        'if(saved>5 && saved<video.duration-5){try{video.currentTime=saved;}catch(e){}}' +
+      '});' +
+      'video.addEventListener("timeupdate",function(){' +
+        'if(video.currentTime>0){setCookie(key,Math.floor(video.currentTime));}' +
+      '});' +
+      'video.addEventListener("pause",function(){' +
+        'if(video.currentTime>0){setCookie(key,Math.floor(video.currentTime));}' +
+      '});' +
+      'video.addEventListener("ended",function(){setCookie(key,"0");});' +
+    '})(videos[i]);' +
+  '}' +
+'})();';
 
-   return '<!doctype html>' +
-   '<html lang="ru">' +
-   '<head>' +
-   '<meta charset="utf-8">' +
-   '<meta http-equiv="X-UA-Compatible" content="IE=edge">' +
-   '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-   '<meta name="robots" content="index,follow">' +
-   '<title>Lenivec — Кино</title>' +
-   '<style>' +
-   'body{margin:0;background:#eee;color:#222;font-family:Arial,sans-serif;font-size:16px;line-height:1.4}' +
-   'main{width:92%;max-width:760px;margin:0 auto;padding:14px 0 30px}' +
-   'header,.film,.comments{background:#fff;border:1px solid #ccc;padding:14px;margin-bottom:14px}' +
-   'h1{margin:0 0 6px;font-size:24px}' +
-   'h2{font-size:18px;margin:0 0 5px}' +
-   '.small{color:#666;font-size:13px}' +
-   '.compat{background:#eee;border:1px solid #ccc;padding:8px;margin:10px 0 14px;font-size:13px}' +
-   '.film-date,.comment-date{color:#777;font-size:12px}' +
-   '.film-video{display:block;width:100%;max-width:100%;margin-top:10px;background:#000}' +
-   '.yt-frame{display:block;width:100%;height:320px;border:0;margin-top:10px}' +
-   '.old-video-note{background:#f5f5f5;border:1px solid #ccc;padding:10px;margin-top:10px}' +
-   'a,button{display:inline-block;padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #999;background:#fff;color:#222;text-decoration:none;font:inherit;cursor:pointer}' +
-   'button:hover,a:hover{background:#eee}' +
-   'form{margin-top:10px}' +
-   'input,textarea{display:block;width:100%;padding:9px;border:1px solid #aaa;font:inherit;box-sizing:border-box;margin:6px 0 10px}' +
-   'textarea{height:90px}' +
-   '.comment{border-top:1px solid #ddd;padding:10px 0}' +
-   '.comment:first-child{border-top:0}' +
-   '.comment-body{white-space:pre-wrap;margin-top:4px}' +
-   '@media(max-width:480px){main{width:96%}.yt-frame{height:220px}}' +
-   '</style>' +
-   '</head>' +
-   '<body>' +
-   '<main>' +
-   '<header>' +
-     '<h1>Lenivec — КИНО</h1>' +
-     '<div class="small">Отдельное пространство с видео</div>' +
-     oldPhoneHint +
-     '<a href="/">← На главную</a>' +
-   '</header>' +
-   '<div class="small">Для Lumia 625 старайся использовать загруженные MP4: IE 11 на Windows Phone лучше всего работает с MP4.</div>' +
-   videoHtml +
-   '<section class="comments" id="comments">' +
-     '<h2>Комментарии</h2>' +
-     '<form action="/kino" method="post">' +
-       '<label>Имя<input type="text" name="author" maxlength="40" value="Аноним"></label>' +
-       '<label>Комментарий<textarea name="body" maxlength="500"></textarea></label>' +
-       '<button type="submit">ОТПРАВИТЬ</button>' +
-     '</form>' +
-     commentsHtml +
-   '</section>' +
-   '</main>' +
-   '<script>' +
-   '(function(){' +
-     'function getCookie(name){' +
-       'var parts=document.cookie.split(";");' +
-       'for(var i=0;i<parts.length;i++){' +
-         'var item=parts[i].replace(/^\\s+/, "");' +
-         'if(item.indexOf(name+"=")===0){return decodeURIComponent(item.substring(name.length+1));}' +
-       '}' +
-       'return "";' +
-     '}' +
-     'function setCookie(name,value){' +
-       'var d=new Date();' +
-       'd.setTime(d.getTime()+31536000000);' +
-       'document.cookie=name+"="+encodeURIComponent(value)+"; expires="+d.toUTCString()+"; path=/kino";' +
-     '}' +
-     'var videos=document.getElementsByTagName("video");' +
-     'for(var i=0;i<videos.length;i++){' +
-       '(function(video){' +
-         'var key="lv_pos_"+video.id;' +
-         'video.addEventListener("loadedmetadata",function(){' +
-           'var saved=parseFloat(getCookie(key));' +
-           'if(saved>5 && saved<video.duration-5){' +
-             'try{video.currentTime=saved;}catch(e){}' +
-           '}' +
-         });' +
-         'video.addEventListener("timeupdate",function(){' +
-           'if(video.currentTime>0){setCookie(key, Math.floor(video.currentTime));}' +
-         });' +
-         'video.addEventListener("ended",function(){setCookie(key,"0");});' +
-         'video.addEventListener("pause",function(){' +
-           'if(video.currentTime>0){setCookie(key, Math.floor(video.currentTime));}' +
-         });' +
-       '})(videos[i]);' +
-     '}' +
-   '})();' +
-   '</script>' +
-   '</body>' +
-   '</html>';
- }
+  return '<!doctype html>' +
+  '<html lang="ru"><head>' +
+  '<meta charset="utf-8">' +
+  '<meta http-equiv="X-UA-Compatible" content="IE=edge">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<meta name="robots" content="index,follow">' +
+  '<title>Lenivec — КИНО</title>' +
+  '<style>' +
+  'body{margin:0;background:#eee;color:#222;font-family:Arial,sans-serif;font-size:16px;line-height:1.4}' +
+  'main{width:94%;max-width:760px;margin:0 auto;padding:12px 0 30px}' +
+  'header,.film,.comments{background:#fff;border:1px solid #ccc;padding:13px;margin-bottom:12px}' +
+  'h1{margin:0 0 5px;font-size:24px}' +
+  'h2{margin:0 0 5px;font-size:18px}' +
+  '.small,.film-date,.comment-date{color:#666;font-size:12px}' +
+  '.compat{background:#eee;border:1px solid #ccc;padding:8px;margin:10px 0;font-size:13px}' +
+  '.film-video{display:block;width:100%;max-width:100%;margin-top:10px;background:#000}' +
+  '.old-video-note{background:#f5f5f5;border:1px solid #ccc;padding:10px;margin-top:10px}' +
+  'a,button{display:inline-block;padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #999;background:#fff;color:#222;text-decoration:none;font:inherit;cursor:pointer}' +
+  'input,textarea{display:block;width:100%;padding:9px;border:1px solid #aaa;font:inherit;box-sizing:border-box;margin:6px 0 10px}' +
+  'textarea{height:90px}' +
+  '.comment{border-top:1px solid #ddd;padding:10px 0}' +
+  '.comment:first-child{border-top:0}' +
+  '.comment-body{white-space:pre-wrap;margin-top:4px}' +
+  '</style></head><body><main>' +
+  '<header><h1>Lenivec — КИНО</h1>' +
+  '<div class="small">Отдельное пространство для видео</div>' +
+  '<div class="compat">' + escapeHtml(hint) + '</div>' +
+  '<a href="/">← На главную</a></header>' +
+  '<div class="small">Для Lumia 625 лучше всего подходят загруженные MP4/H.264. YouTube-ссылки остаются обычными ссылками на старом телефоне.</div>' +
+  videoHtml +
+  '<section class="comments" id="comments"><h2>Комментарии</h2>' +
+  '<form action="/kino" method="post">' +
+  '<label>Имя<input type="text" name="author" maxlength="40" value="Аноним"></label>' +
+  '<label>Комментарий<textarea name="body" maxlength="500"></textarea></label>' +
+  '<button type="submit">ОТПРАВИТЬ</button>' +
+  '</form>' +
+  commentsHtml +
+  '</section></main>' +
+  '<script>' + script + '</script>' +
+  '</body></html>';
+}
 
- async function postPage(request, env, id) {
+async function postPage(request, env, id) {
    const post = await env.DB.prepare(
      `SELECT id, body, created_at, media_key, media_type, original_name, youtube_url
       FROM posts
