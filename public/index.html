@@ -151,6 +151,36 @@
       border: 0;
     }
 
+    .youtube-start {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: #000;
+      cursor: pointer;
+    }
+
+    .youtube-start img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .youtube-start span {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 10px 14px;
+      background: rgba(0,0,0,.75);
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 4px;
+    }
+
     .empty,
     .error {
       background: white;
@@ -231,6 +261,33 @@
 </main>
 
 <script>
+function youtubeId(value) {
+  try {
+    const url = new URL(value);
+    let id = "";
+
+    if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") {
+      id = url.pathname.slice(1).split("/")[0];
+    } else if (
+      url.hostname === "youtube.com" ||
+      url.hostname === "www.youtube.com" ||
+      url.hostname === "m.youtube.com"
+    ) {
+      if (url.pathname === "/watch") {
+        id = url.searchParams.get("v") || "";
+      } else if (url.pathname.startsWith("/shorts/")) {
+        id = url.pathname.slice("/shorts/".length).split("/")[0];
+      } else if (url.pathname.startsWith("/embed/")) {
+        id = url.pathname.slice("/embed/".length).split("/")[0];
+      }
+    }
+
+    return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : "";
+  } catch {
+    return "";
+  }
+}
+
 function youtubeEmbedUrl(value) {
   try {
     const url = new URL(value);
@@ -313,18 +370,42 @@ async function loadPosts() {
       article.appendChild(author);
       article.appendChild(text);
 
+      const actions = document.createElement("div");
+      actions.className = "post-actions";
+
       if (post.youtubeUrl) {
         const wrap = document.createElement("div");
         wrap.className = "youtube-wrap";
 
-        const iframe = document.createElement("iframe");
-        iframe.className = "youtube-player";
-        iframe.src = youtubeEmbedUrl(post.youtubeUrl);
-        iframe.title = "YouTube видео";
-        iframe.frameBorder = "0";
-        iframe.allowFullscreen = true;
+        const button = document.createElement("button");
+        button.className = "youtube-start";
+        button.type = "button";
 
-        wrap.appendChild(iframe);
+        const image = document.createElement("img");
+        image.src = "https://i.ytimg.com/vi/" +
+          encodeURIComponent(youtubeId(post.youtubeUrl)) +
+          "/hqdefault.jpg";
+        image.alt = "Превью YouTube видео";
+
+        const label = document.createElement("span");
+        label.textContent = "▶ Смотреть";
+
+        button.appendChild(image);
+        button.appendChild(label);
+
+        button.addEventListener("click", () => {
+          const iframe = document.createElement("iframe");
+          iframe.className = "youtube-player";
+          iframe.src = youtubeEmbedUrl(post.youtubeUrl);
+          iframe.title = "YouTube видео";
+          iframe.frameBorder = "0";
+          iframe.allowFullscreen = true;
+
+          wrap.innerHTML = "";
+          wrap.appendChild(iframe);
+        });
+
+        wrap.appendChild(button);
         article.appendChild(wrap);
 
         const youtubeLink = document.createElement("a");
@@ -351,9 +432,6 @@ async function loadPosts() {
         video.preload = "metadata";
         article.appendChild(video);
       }
-
-      const actions = document.createElement("div");
-      actions.className = "post-actions";
 
       async function shareLink(url, button, successText, shareText) {
         try {
