@@ -10,3 +10,12 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at
 ON posts(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS youtube_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  url TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_youtube_links_created_at
+ON youtube_links(created_at DESC);
