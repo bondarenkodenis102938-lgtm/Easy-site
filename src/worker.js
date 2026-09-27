@@ -84,6 +84,16 @@ export default {
         return await deletePost(Number(deleteMatch[1]), env);
       }
 
+      // Файл robots.txt для поисковых роботов
+      if (url.pathname === "/robots.txt" && request.method === "GET") {
+        return robotsTxt(request);
+      }
+
+      // Динамическая карта всех публичных страниц и изображений
+      if (url.pathname === "/sitemap.xml" && request.method === "GET") {
+        return await sitemapXml(request, env);
+      }
+
       // Получить медиафайл
       if (url.pathname.startsWith("/media/") && request.method === "GET") {
         const key = decodeURIComponent(
@@ -144,6 +154,82 @@ export default {
 // ============================
  // ОТДЕЛЬНАЯ СТРАНИЦА ПОСТА
  // ============================
+ function robotsTxt(request) {
+   const origin = new URL(request.url).origin;
+
+   const lines = [
+     "User-agent: *",
+     "Allow: /",
+     "Disallow: /admin",
+     "Disallow: /api/",
+     "",
+     "Sitemap: " + origin + "/sitemap.xml"
+   ];
+
+   return new Response(lines.join("\n"), {
+     headers: {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "public, max-age=3600"
+     }
+   });
+ }
+
+ async function sitemapXml(request, env) {
+   const origin = new URL(request.url).origin;
+
+   const { results } = await env.DB.prepare(
+     "SELECT id, created_at, media_key, media_type FROM posts ORDER BY created_at DESC, id DESC"
+   ).all();
+
+   const urls = [
+     "<url><loc>" + escapeXml(origin + "/") + "</loc></url>"
+   ];
+
+   for (const post of results) {
+     const postUrl = origin + "/post/" + encodeURIComponent(post.id);
+     const lastmod = Number(post.created_at);
+     const imageUrl = post.media_type === "image" && post.media_key
+       ? origin + "/media/" + encodeURIComponent(post.media_key)
+       : null;
+
+     let entry = "<url><loc>" + escapeXml(postUrl) + "</loc>";
+
+     if (Number.isFinite(lastmod)) {
+       entry += "<lastmod>" + new Date(lastmod).toISOString() + "</lastmod>";
+     }
+
+     if (imageUrl) {
+       entry += "<image:image><image:loc>" + escapeXml(imageUrl) + "</image:loc></image:image>";
+     }
+
+     entry += "</url>";
+     urls.push(entry);
+   }
+
+   const xml =
+     '<?xml version="1.0" encoding="UTF-8"?>' +
+     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" ' +
+     'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' +
+     urls.join("") +
+     "</urlset>";
+
+   return new Response(xml, {
+     headers: {
+       "Content-Type": "application/xml; charset=utf-8",
+       "Cache-Control": "public, max-age=3600"
+     }
+   });
+ }
+
+ function escapeXml(value) {
+   return String(value)
+     .replace(/&/g, "&amp;")
+     .replace(/</g, "&lt;")
+     .replace(/>/g, "&gt;")
+     .replace(/"/g, "&quot;")
+     .replace(/'/g, "&apos;");
+ }
+
 
  async function postPage(request, env, id) {
    const post = await env.DB.prepare(
@@ -217,7 +303,7 @@ a{color:#222}
 
    if (mediaPath && post.media_type === "image") {
      media = `
-       <img class="media" src="${escapeHtml(mediaPath)}" alt="" loading="eager">
+       <img class="media" src="${escapeHtml(mediaPath)}" alt="Фото из поста Lenivec — пост ${Number(post.id)}" loading="eager">
        <p><a href="${escapeHtml(mediaPath)}">Открыть фото отдельно</a></p>
      `;
    }
@@ -237,6 +323,8 @@ a{color:#222}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="${escapeHtml(postUrl)}">
 <title>Lenivec — пост ${Number(post.id)}</title>
 <meta property="og:title" content="Lenivec — пост ${Number(post.id)}">
 <meta property="og:description" content="${description}">
