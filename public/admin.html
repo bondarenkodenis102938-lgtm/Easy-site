@@ -324,8 +324,7 @@ async function loadPosts(){
 
 function updateStats(){
   statPosts.textContent=currentPosts.length;
-  statImages=currentPosts.filter(p=>p.mediaType==="image").length;
-  document.getElementById("statImages").textContent=statImages;
+  statImages.textContent=currentPosts.filter(p=>p.mediaType==="image").length;
   statVideos.textContent=currentPosts.filter(p=>p.mediaType==="video").length;
   statYoutube.textContent=currentPosts.filter(p=>p.youtubeUrl).length;
 }
