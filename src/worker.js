@@ -496,11 +496,32 @@ function renderKinoPage(videos, comments, requestUrl, userAgent) {
     }
 
     if (post.youtube_url) {
-      videoHtml +=
-        '<div class="old-video-note">' +
-        '<strong>YouTube</strong> — ' +
-        '<a href="' + escapeHtml(post.youtube_url) + '">Открыть видео</a>' +
-        '</div>';
+      const youtubeId = extractYouTubeId(post.youtube_url);
+      const youtubeEmbedUrl = youtubeId
+        ? "https://www.youtube.com/embed/" +
+          encodeURIComponent(youtubeId) +
+          "?controls=1&playsinline=1&rel=0"
+        : "";
+
+      if (isOldPhone) {
+        videoHtml +=
+          '<div class="old-video-note">' +
+          '<strong>YouTube</strong> — ' +
+          '<a href="' + escapeHtml(post.youtube_url) + '">Открыть видео на YouTube</a>' +
+          '</div>';
+      } else if (youtubeEmbedUrl) {
+        videoHtml +=
+          '<div class="youtube-box">' +
+          '<iframe class="youtube-player" src="' +
+          escapeHtml(youtubeEmbedUrl) +
+          '" title="YouTube видео" frameborder="0" allowfullscreen></iframe>' +
+          '</div>';
+      } else {
+        videoHtml +=
+          '<div class="old-video-note">' +
+          '<strong>YouTube</strong> — ссылка имеет неизвестный формат.' +
+          '</div>';
+      }
     }
 
     videoHtml += "</section>";
@@ -581,6 +602,8 @@ function renderKinoPage(videos, comments, requestUrl, userAgent) {
   '.small,.film-date,.comment-date{color:#666;font-size:12px}' +
   '.compat{background:#eee;border:1px solid #ccc;padding:8px;margin:10px 0;font-size:13px}' +
   '.film-video{display:block;width:100%;max-width:100%;margin-top:10px;background:#000}' +
+  '.youtube-box{width:100%;margin-top:10px;background:#000}' +
+  '.youtube-player{display:block;width:100%;height:430px;border:0}' +
   '.old-video-note{background:#f5f5f5;border:1px solid #ccc;padding:10px;margin-top:10px}' +
   'a,button{display:inline-block;padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #999;background:#fff;color:#222;text-decoration:none;font:inherit;cursor:pointer}' +
   'input,textarea{display:block;width:100%;padding:9px;border:1px solid #aaa;font:inherit;box-sizing:border-box;margin:6px 0 10px}' +
