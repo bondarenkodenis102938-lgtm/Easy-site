@@ -284,7 +284,12 @@ export default {
      "LIMIT 30"
    ).all();
 
-   return new Response(renderKinoPage(results, comments, request.url), {
+   return new Response(renderKinoPage(
+     results,
+     comments,
+     request.url,
+     request.headers.get("User-Agent") || ""
+   ), {
      headers: {
        "Content-Type": "text/html; charset=utf-8",
        "Cache-Control": "no-store"
@@ -331,10 +336,10 @@ export default {
    });
  }
 
- function renderKinoPage(videos, comments, requestUrl) {
+ function renderKinoPage(videos, comments, requestUrl, userAgent) {
    const url = new URL(requestUrl);
    const isOldPhone = /Windows Phone|IEMobile/i.test(
-     requestUrl
+     String(userAgent || "")
    );
 
    let videoHtml = "";
