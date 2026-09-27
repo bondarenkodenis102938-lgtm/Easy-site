@@ -280,25 +280,58 @@ button:hover,a:hover{background:#eee}
 <div class="text">${body}</div>
 ${media}
 <div class="actions">
-<button id="share">Поделиться</button>
+<button id="share">Поделиться постом</button>
+${post.media_type === "image" ? '<button id="share-media">Поделиться фото</button>' : ""}
+${post.media_type === "video" ? '<button id="share-media">Поделиться видео</button>' : ""}
 <a href="/">Все посты</a>
 </div>
 </article>
 </main>
 <script>
-document.getElementById("share").onclick = async () => {
-  const shareUrl = location.href;
-  const button = document.getElementById("share");
-
+async function shareLink(url, button, successText, text) {
   try {
     if (navigator.share) {
-      await navigator.share({title:"Lenivec", url:shareUrl});
+      await navigator.share({
+        title: "Lenivec",
+        text,
+        url
+      });
     } else {
-      await navigator.clipboard.writeText(shareUrl);
-      button.textContent = "Ссылка скопирована!";
-      setTimeout(() => button.textContent = "Поделиться", 2000);
+      await navigator.clipboard.writeText(url);
+      button.textContent = successText;
+      setTimeout(() => {
+        button.textContent = button.dataset.originalText;
+      }, 2000);
     }
   } catch (error) {}
+}
+
+const shareButton = document.getElementById("share");
+shareButton.dataset.originalText = "Поделиться постом";
+
+shareButton.onclick = () => {
+  return shareLink(
+    location.href,
+    shareButton,
+    "Ссылка скопирована!",
+    "Пост Lenivec"
+  );
+};
+
+const mediaButton = document.getElementById("share-media");
+const directMediaUrl = ${JSON.stringify(mediaUrl)};
+
+if (mediaButton && directMediaUrl) {
+  mediaButton.dataset.originalText = mediaButton.textContent;
+
+  mediaButton.onclick = () => {
+    return shareLink(
+      directMediaUrl,
+      mediaButton,
+      "Ссылка на медиа скопирована!",
+      "Медиа из Lenivec"
+    );
+  };
 };
 </script>
 </body>
