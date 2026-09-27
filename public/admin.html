@@ -99,7 +99,7 @@
 
     <label>
       Текст записи
-      <textarea id="body" placeholder="Напиши текст записи..."></textarea>
+      <textarea id="body" spellcheck="true" placeholder="Напиши текст записи..."></textarea>
     </label>
 
     <label>
@@ -115,7 +115,7 @@
     <button id="saveBtn">СОХРАНИТЬ</button>
     <button id="logoutBtn">ВЫЙТИ</button>
 
-    <p id="message"></p>
+    <p id="message">Можно писать с клавиатуры обычным способом. Backspace удаляет текст; вне поля ввода возвращает назад.</p>
 
     <h2>Записи</h2>
     <div id="posts"></div>
@@ -147,7 +147,7 @@ async function checkLogin() {
 
     const data = await response.json();
 
-    if (data.authenticated) {
+    if (data.loggedIn) {
       showAdmin();
     } else {
       showLogin();
@@ -294,7 +294,7 @@ async function loadPosts() {
       const item = document.createElement("div");
       item.className = "post";
 
-      const date = new Date(post.createdAt * 1000);
+      const date = new Date(post.createdAt);
 
       const dateElement = document.createElement("div");
       dateElement.textContent = date.toLocaleString("ru-RU");
@@ -347,6 +347,27 @@ async function loadPosts() {
     posts.textContent = "Не удалось загрузить записи.";
   }
 }
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Backspace") {
+    return;
+  }
+
+  const target = event.target;
+  const isEditable =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable;
+
+  if (isEditable || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return;
+  }
+
+  if (history.length > 1) {
+    history.back();
+  }
+});
 
 checkLogin();
 </script>
