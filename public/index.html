@@ -135,6 +135,22 @@
       width: 100%;
     }
 
+    .youtube-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      margin-top: 18px;
+      background: #000;
+    }
+
+    .youtube-player {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
     .empty,
     .error {
       background: white;
@@ -215,6 +231,38 @@
 </main>
 
 <script>
+function youtubeEmbedUrl(value) {
+  try {
+    const url = new URL(value);
+
+    let id = "";
+
+    if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") {
+      id = url.pathname.slice(1).split("/")[0];
+    } else if (
+      url.hostname === "youtube.com" ||
+      url.hostname === "www.youtube.com" ||
+      url.hostname === "m.youtube.com"
+    ) {
+      if (url.pathname === "/watch") {
+        id = url.searchParams.get("v") || "";
+      } else if (url.pathname.startsWith("/shorts/")) {
+        id = url.pathname.slice("/shorts/".length).split("/")[0];
+      } else if (url.pathname.startsWith("/embed/")) {
+        id = url.pathname.slice("/embed/".length).split("/")[0];
+      }
+    }
+
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+      return "about:blank";
+    }
+
+    return "https://www.youtube.com/embed/" + encodeURIComponent(id) + "?controls=1&playsinline=1&rel=0";
+  } catch {
+    return "about:blank";
+  }
+}
+
 async function loadPosts() {
   const container = document.getElementById("posts");
 
@@ -264,6 +312,29 @@ async function loadPosts() {
       article.appendChild(date);
       article.appendChild(author);
       article.appendChild(text);
+
+      if (post.youtubeUrl) {
+        const wrap = document.createElement("div");
+        wrap.className = "youtube-wrap";
+
+        const iframe = document.createElement("iframe");
+        iframe.className = "youtube-player";
+        iframe.src = youtubeEmbedUrl(post.youtubeUrl);
+        iframe.title = "YouTube видео";
+        iframe.frameBorder = "0";
+        iframe.allowFullscreen = true;
+
+        wrap.appendChild(iframe);
+        article.appendChild(wrap);
+
+        const youtubeLink = document.createElement("a");
+        youtubeLink.className = "post-link";
+        youtubeLink.href = post.youtubeUrl;
+        youtubeLink.target = "_blank";
+        youtubeLink.rel = "noopener";
+        youtubeLink.textContent = "Открыть на YouTube";
+        actions.appendChild(youtubeLink);
+      }
 
       if (post.mediaUrl && post.mediaType === "image") {
         const image = document.createElement("img");
