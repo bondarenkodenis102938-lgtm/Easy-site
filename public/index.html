@@ -261,7 +261,7 @@ async function loadPosts() {
       const actions = document.createElement("div");
       actions.className = "post-actions";
 
-      async function shareUrl(url, button, successText, shareText) {
+      async function shareLink(url, button, successText, shareText) {
         try {
           if (navigator.share) {
             await navigator.share({
@@ -288,7 +288,7 @@ async function loadPosts() {
         const shareUrl =
           location.origin + "/post/" + encodeURIComponent(post.id);
 
-        return shareUrl(
+        return shareLink(
           shareUrl,
           shareButton,
           "Ссылка скопирована!",
@@ -308,7 +308,7 @@ async function loadPosts() {
           const photoUrl =
             new URL(post.mediaUrl, location.origin).href;
 
-          return shareUrl(
+          return shareLink(
             photoUrl,
             photoButton,
             "Ссылка на фото скопирована!",
