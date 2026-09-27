@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
@@ -113,29 +113,6 @@
       color: #9b0000;
     }
 
-    .post-actions {
-      margin-top: 15px;
-    }
-
-    .share-button,
-    .post-link {
-      display: inline-block;
-      margin-right: 8px;
-      padding: 9px 14px;
-      background: #fff;
-      color: #222;
-      border: 1px solid #999;
-      border-radius: 4px;
-      font: inherit;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .share-button:hover,
-    .post-link:hover {
-      background: #eee;
-    }
-
     @media (max-width: 600px) {
       .header-inner {
         padding: 15px;
@@ -206,7 +183,7 @@ async function loadPosts() {
 
       if (Number.isFinite(timestamp)) {
         date.textContent =
-          new Date(timestamp).toLocaleString("ru-RU");
+          new Date(timestamp * 1000).toLocaleString("ru-RU");
       } else {
         date.textContent = "";
       }
@@ -238,43 +215,6 @@ async function loadPosts() {
         video.preload = "metadata";
         article.appendChild(video);
       }
-
-      const actions = document.createElement("div");
-      actions.className = "post-actions";
-
-      const shareButton = document.createElement("button");
-      shareButton.className = "share-button";
-      shareButton.textContent = "Поделиться";
-
-      shareButton.onclick = async () => {
-        const shareUrl =
-          location.origin + "/viewer?id=" + encodeURIComponent(post.id);
-
-        try {
-          if (navigator.share) {
-            await navigator.share({
-              title: "Lenivec",
-              url: shareUrl
-            });
-          } else {
-            await navigator.clipboard.writeText(shareUrl);
-            shareButton.textContent = "Ссылка скопирована!";
-            setTimeout(() => {
-              shareButton.textContent = "Поделиться";
-            }, 2000);
-          }
-        } catch (error) {}
-      };
-
-      const postLink = document.createElement("a");
-      postLink.className = "post-link";
-      postLink.href =
-        "/viewer?id=" + encodeURIComponent(post.id);
-      postLink.textContent = "Открыть отдельно";
-
-      actions.appendChild(shareButton);
-      actions.appendChild(postLink);
-      article.appendChild(actions);
 
       container.appendChild(article);
     }
