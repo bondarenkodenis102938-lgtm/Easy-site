@@ -138,8 +138,20 @@
       cursor: pointer;
     }
 
-    .share-button:hover {
+    .share-button:hover,
+    .post-link:hover {
       background: #eee;
+    }
+
+    .post-link {
+      display: inline-block;
+      margin-right: 8px;
+      padding: 9px 14px;
+      background: #fff;
+      color: #222;
+      border: 1px solid #999;
+      border-radius: 4px;
+      text-decoration: none;
     }
 
     @media (max-width: 600px) {
@@ -249,31 +261,78 @@ async function loadPosts() {
       const actions = document.createElement("div");
       actions.className = "post-actions";
 
-      const shareButton = document.createElement("button");
-      shareButton.className = "share-button";
-      shareButton.textContent = "Поделиться";
-
-      shareButton.onclick = async () => {
-        const shareUrl =
-          location.origin + "/post/" + encodeURIComponent(post.id);
-
+      async function shareUrl(url, button, successText, shareText) {
         try {
           if (navigator.share) {
             await navigator.share({
               title: "Lenivec",
-              url: shareUrl
+              text: shareText || "Lenivec",
+              url
             });
           } else {
-            await navigator.clipboard.writeText(shareUrl);
-            shareButton.textContent = "Ссылка скопирована!";
+            await navigator.clipboard.writeText(url);
+            button.textContent = successText;
             setTimeout(() => {
-              shareButton.textContent = "Поделиться";
+              button.textContent = button.dataset.originalText;
             }, 2000);
           }
         } catch (error) {}
+      }
+
+      const shareButton = document.createElement("button");
+      shareButton.className = "share-button";
+      shareButton.dataset.originalText = "Поделиться постом";
+      shareButton.textContent = "Поделиться постом";
+
+      shareButton.onclick = () => {
+        const shareUrl =
+          location.origin + "/post/" + encodeURIComponent(post.id);
+
+        return shareUrl(
+          shareUrl,
+          shareButton,
+          "Ссылка скопирована!",
+          "Пост Lenivec"
+        );
       };
 
       actions.appendChild(shareButton);
+
+      if (post.mediaUrl && post.mediaType === "image") {
+        const photoButton = document.createElement("button");
+        photoButton.className = "share-button";
+        photoButton.dataset.originalText = "Поделиться фото";
+        photoButton.textContent = "Поделиться фото";
+
+        photoButton.onclick = () => {
+          const photoUrl =
+            new URL(post.mediaUrl, location.origin).href;
+
+          return shareUrl(
+            photoUrl,
+            photoButton,
+            "Ссылка на фото скопирована!",
+            "Фото из Lenivec"
+          );
+        };
+
+        actions.appendChild(photoButton);
+      }
+
+      if (post.mediaUrl) {
+        const mediaLink = document.createElement("a");
+        mediaLink.className = "post-link";
+        mediaLink.href = post.mediaUrl;
+        mediaLink.target = "_blank";
+        mediaLink.rel = "noopener";
+        mediaLink.textContent =
+          post.mediaType === "image"
+            ? "Открыть фото"
+            : "Открыть файл";
+
+        actions.appendChild(mediaLink);
+      }
+
       article.appendChild(actions);
 
       container.appendChild(article);
