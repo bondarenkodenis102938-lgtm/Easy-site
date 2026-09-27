@@ -2,14 +2,13 @@ name: Extract Lenivec project
 
 on:
   push:
-    paths:
-      - Lenivec-full-project.zip
 
 permissions:
   contents: write
 
 jobs:
   extract:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
