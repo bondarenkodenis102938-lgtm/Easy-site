@@ -56,6 +56,27 @@
       font-size: 11px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .refresh-button {
+      display: inline-block;
+      padding: 9px 14px;
+      background: #fff;
+      color: #222;
+      border: 1px solid #999;
+      border-radius: 4px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .refresh-button:hover {
+      background: #eee;
+    }
+
     .admin-link {
       display: inline-block;
       padding: 9px 14px;
@@ -183,7 +204,7 @@
       <div class="version-badge">Версия 1.1 · SHARE</div>
     </div>
 
-    <a class="admin-link" href="/admin">Админка</a>
+    <div class="header-actions"><button id="refreshBtn" class="refresh-button">Обновить</button><a class="admin-link" href="/admin">Админка</a></div>
   </div>
 </header>
 
@@ -366,6 +387,31 @@ async function loadPosts() {
       '<div class="error">Не удалось загрузить записи.</div>';
   }
 }
+
+document.getElementById("refreshBtn").addEventListener("click", () => {
+  loadPosts();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Backspace") {
+    return;
+  }
+
+  const target = event.target;
+  const isEditable =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable;
+
+  if (isEditable || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return;
+  }
+
+  if (history.length > 1) {
+    history.back();
+  }
+});
 
 loadPosts();
 </script>
