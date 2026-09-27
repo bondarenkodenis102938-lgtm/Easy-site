@@ -319,6 +319,27 @@ async function loadPosts() {
         actions.appendChild(photoButton);
       }
 
+      if (post.mediaUrl && post.mediaType === "video") {
+        const videoButton = document.createElement("button");
+        videoButton.className = "share-button";
+        videoButton.dataset.originalText = "Поделиться видео";
+        videoButton.textContent = "Поделиться видео";
+
+        videoButton.onclick = () => {
+          const videoUrl =
+            new URL(post.mediaUrl, location.origin).href;
+
+          return shareLink(
+            videoUrl,
+            videoButton,
+            "Ссылка на видео скопирована!",
+            "Видео из Lenivec"
+          );
+        };
+
+        actions.appendChild(videoButton);
+      }
+
       if (post.mediaUrl) {
         const mediaLink = document.createElement("a");
         mediaLink.className = "post-link";
@@ -328,7 +349,7 @@ async function loadPosts() {
         mediaLink.textContent =
           post.mediaType === "image"
             ? "Открыть фото"
-            : "Открыть файл";
+            : "Открыть видео";
 
         actions.appendChild(mediaLink);
       }
