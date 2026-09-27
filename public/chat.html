@@ -1,0 +1,52 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lenivec — Chat Viewer</title>
+<style>
+body{font-family:Arial,sans-serif;background:#eee;margin:0;padding:20px}
+main{max-width:800px;margin:auto}
+article{background:#fff;padding:20px;margin:0 0 16px}
+img,video{display:block;max-width:100%;margin-top:15px}
+time{color:#777;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Lenivec</h1>
+<div id="posts">Загрузка...</div>
+</main>
+<script>
+fetch('/api/posts?chat=' + Date.now(), {cache:'no-store'})
+.then(r=>r.json())
+.then(posts=>{
+ const root=document.getElementById('posts');
+ root.innerHTML='';
+ posts.forEach(post=>{
+   const article=document.createElement('article');
+   const time=document.createElement('time');
+   time.textContent=new Date(post.createdAt).toLocaleString('ru-RU');
+   article.appendChild(time);
+   const text=document.createElement('p');
+   text.textContent=post.body;
+   article.appendChild(text);
+   if(post.mediaUrl && post.mediaType==='image'){
+     const img=document.createElement('img');
+     img.src=post.mediaUrl;
+     img.alt='';
+     article.appendChild(img);
+   }
+   if(post.mediaUrl && post.mediaType==='video'){
+     const video=document.createElement('video');
+     video.src=post.mediaUrl;
+     video.controls=true;
+     article.appendChild(video);
+   }
+   root.appendChild(article);
+ });
+})
+.catch(()=>document.getElementById('posts').textContent='Ошибка загрузки');
+</script>
+</body>
+</html>

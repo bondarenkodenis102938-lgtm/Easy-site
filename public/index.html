@@ -1,0 +1,234 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lenivec</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eeeeee;
+      color: #222;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #d5d5d5;
+    }
+
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .admin-link {
+      display: inline-block;
+      padding: 9px 14px;
+      background: #222;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .admin-link:hover {
+      background: #444;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .post {
+      background: white;
+      padding: 22px;
+      margin-bottom: 18px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .post-date {
+      color: #777;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .post-author {
+      color: #555;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .post-text {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
+    img,
+    video {
+      display: block;
+      max-width: 100%;
+      margin-top: 18px;
+      border-radius: 4px;
+    }
+
+    video {
+      width: 100%;
+    }
+
+    .empty,
+    .error {
+      background: white;
+      padding: 25px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .error {
+      color: #9b0000;
+    }
+
+    @media (max-width: 600px) {
+      .header-inner {
+        padding: 15px;
+      }
+
+      main {
+        margin-top: 20px;
+        padding: 0 12px;
+      }
+
+      .post {
+        padding: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="brand">Lenivec</div>
+      <div class="subtitle">Мой простой сайт.</div>
+    </div>
+
+    <a class="admin-link" href="/admin">Админка</a>
+  </div>
+</header>
+
+<main>
+  <div id="posts">
+    <div class="empty">Загрузка...</div>
+  </div>
+</main>
+
+<script>
+async function loadPosts() {
+  const container = document.getElementById("posts");
+
+  try {
+    const response = await fetch("/api/posts", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error("API error");
+    }
+
+    const list = await response.json();
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerHTML =
+        '<div class="empty">Пока ничего нет.</div>';
+      return;
+    }
+
+    for (const post of list) {
+      const article = document.createElement("article");
+      article.className = "post";
+
+      const date = document.createElement("div");
+      date.className = "post-date";
+
+      const timestamp = Number(post.createdAt);
+
+      if (Number.isFinite(timestamp)) {
+        date.textContent =
+          new Date(timestamp * 1000).toLocaleString("ru-RU");
+      } else {
+        date.textContent = "";
+      }
+
+      const author = document.createElement("div");
+      author.className = "post-author";
+      author.textContent = "Опубликовал: Lenivec";
+
+      const text = document.createElement("div");
+      text.className = "post-text";
+      text.textContent = post.body || "";
+
+      article.appendChild(date);
+      article.appendChild(author);
+      article.appendChild(text);
+
+      if (post.mediaUrl && post.mediaType === "image") {
+        const image = document.createElement("img");
+        image.src = post.mediaUrl;
+        image.alt = "";
+        image.loading = "lazy";
+        article.appendChild(image);
+      }
+
+      if (post.mediaUrl && post.mediaType === "video") {
+        const video = document.createElement("video");
+        video.src = post.mediaUrl;
+        video.controls = true;
+        video.preload = "metadata";
+        article.appendChild(video);
+      }
+
+      container.appendChild(article);
+    }
+
+  } catch (error) {
+    container.innerHTML =
+      '<div class="error">Не удалось загрузить записи.</div>';
+  }
+}
+
+loadPosts();
+</script>
+
+</body>
+</html>
+
+<!-- Lenivec update 2026-09-27 -->

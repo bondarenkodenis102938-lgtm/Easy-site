@@ -1,0 +1,174 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lenivec</title>
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#eee;
+  margin:0;
+  padding:20px
+}
+main{
+  max-width:800px;
+  margin:auto
+}
+article{
+  background:#fff;
+  padding:20px;
+  margin-bottom:16px
+}
+img,video{
+  display:block;
+  max-width:100%;
+  margin-top:15px
+}
+time{
+  color:#777;
+  font-size:14px
+}
+button,a{
+  display:inline-block;
+  margin-top:15px;
+  margin-right:8px;
+  padding:10px 16px;
+  background:#fff;
+  border:1px solid #999;
+  color:#222;
+  text-decoration:none;
+  cursor:pointer
+}
+button:hover,a:hover{
+  background:#eee
+}
+</style>
+</head>
+
+<body>
+<main>
+<h1>Lenivec</h1>
+<div id="posts">Загрузка...</div>
+</main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const selectedId = params.get('id');
+
+fetch('/api/posts?viewer=' + Date.now(), {
+  cache:'no-store'
+})
+.then(response => {
+  if (!response.ok) throw new Error('Ошибка сервера');
+  return response.json();
+})
+.then(posts => {
+
+  const root = document.getElementById('posts');
+
+  if (selectedId) {
+    posts = posts.filter(post => String(post.id) === selectedId);
+  }
+
+  root.innerHTML = '';
+
+  if (!posts.length) {
+    root.textContent = 'Пост не найден';
+    return;
+  }
+
+  posts.forEach(post => {
+
+    const article = document.createElement('article');
+
+    const time = document.createElement('time');
+    time.textContent =
+      new Date(post.createdAt).toLocaleString('ru-RU');
+    article.appendChild(time);
+
+    const author = document.createElement('p');
+    author.textContent = 'Опубликовал: Lenivec';
+    article.appendChild(author);
+
+    const text = document.createElement('p');
+    text.textContent = post.body;
+    article.appendChild(text);
+
+    if (post.mediaUrl && post.mediaType === 'image') {
+      const image = document.createElement('img');
+      image.src = post.mediaUrl;
+      image.alt = '';
+      image.loading = 'lazy';
+      article.appendChild(image);
+    }
+
+    if (post.mediaUrl && post.mediaType === 'video') {
+      const video = document.createElement('video');
+      video.src = post.mediaUrl;
+      video.controls = true;
+      article.appendChild(video);
+    }
+
+    const shareButton = document.createElement('button');
+    shareButton.textContent = 'Поделиться';
+
+    shareButton.onclick = async () => {
+
+      const shareUrl =
+        location.origin + '/viewer?id=' + encodeURIComponent(post.id);
+
+      if (navigator.share) {
+
+        try {
+          await navigator.share({
+            title: 'Lenivec',
+            text: post.body,
+            url: shareUrl
+          });
+        } catch (error) {
+          // Пользователь просто закрыл меню
+        }
+
+      } else {
+
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+
+          shareButton.textContent = 'Ссылка скопирована!';
+
+          setTimeout(() => {
+            shareButton.textContent = 'Поделиться';
+          }, 2000);
+
+        } catch (error) {
+
+          prompt(
+            'Скопируй ссылку:',
+            shareUrl
+          );
+
+        }
+      }
+    };
+
+    article.appendChild(shareButton);
+
+    const link = document.createElement('a');
+    link.href =
+      '/viewer?id=' + encodeURIComponent(post.id);
+    link.textContent = 'Открыть отдельно';
+
+    article.appendChild(link);
+
+    root.appendChild(article);
+  });
+})
+.catch(error => {
+  document.getElementById('posts').textContent =
+    'Ошибка загрузки';
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lenivec — админка</title>
+  <style>
+    body {
+      margin: 0;
+      background: #eee;
+      font-family: Arial, sans-serif;
+      color: #222;
+    }
+
+    main {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .box {
+      background: white;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    input, textarea, button {
+      font: inherit;
+      box-sizing: border-box;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 16px;
+      border: 1px solid #bbb;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 10px 18px;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    .post {
+      border-top: 1px solid #ddd;
+      padding: 16px 0;
+    }
+
+    .error {
+      color: #a00;
+    }
+
+    .ok {
+      color: #176b17;
+    }
+
+    img, video {
+      max-width: 100%;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+
+  <section id="loginBox" class="box">
+    <h1>Lenivec — вход</h1>
+
+    <label>
+      Логин
+      <input id="username" type="text" value="Lenivec" autocomplete="username">
+    </label>
+
+    <label>
+      Пароль
+      <input id="password" type="password" autocomplete="current-password">
+    </label>
+
+    <button id="loginBtn">ВОЙТИ</button>
+
+    <p id="loginMessage"></p>
+  </section>
+
+  <section id="adminBox" class="box" hidden>
+    <h1>Админка</h1>
+
+    <label>
+      Текст записи
+      <textarea id="body" placeholder="Напиши текст записи..."></textarea>
+    </label>
+
+    <label>
+      Фото или видео
+      <input
+        id="file"
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg">
+    </label>
+
+    <br><br>
+
+    <button id="saveBtn">СОХРАНИТЬ</button>
+    <button id="logoutBtn">ВЫЙТИ</button>
+
+    <p id="message"></p>
+
+    <h2>Записи</h2>
+    <div id="posts"></div>
+  </section>
+
+</main>
+
+<script>
+const loginBox = document.getElementById("loginBox");
+const adminBox = document.getElementById("adminBox");
+
+const username = document.getElementById("username");
+const password = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const loginMessage = document.getElementById("loginMessage");
+
+const body = document.getElementById("body");
+const file = document.getElementById("file");
+const saveBtn = document.getElementById("saveBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const message = document.getElementById("message");
+const posts = document.getElementById("posts");
+
+async function checkLogin() {
+  try {
+    const response = await fetch("/api/me", {
+      cache: "no-store"
+    });
+
+    const data = await response.json();
+
+    if (data.authenticated) {
+      showAdmin();
+    } else {
+      showLogin();
+    }
+  } catch {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  loginBox.hidden = false;
+  adminBox.hidden = true;
+}
+
+function showAdmin() {
+  loginBox.hidden = true;
+  adminBox.hidden = false;
+  loadPosts();
+}
+
+loginBtn.addEventListener("click", async () => {
+  loginMessage.textContent = "";
+
+  const user = username.value.trim();
+  const pass = password.value;
+
+  if (!user || !pass) {
+    loginMessage.textContent = "Введите логин и пароль.";
+    loginMessage.className = "error";
+    return;
+  }
+
+  loginBtn.disabled = true;
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        username: user,
+        password: pass
+      })
+    });
+
+    if (!response.ok) {
+      loginMessage.textContent = "Неверный логин или пароль.";
+      loginMessage.className = "error";
+      return;
+    }
+
+    password.value = "";
+    showAdmin();
+
+  } catch {
+    loginMessage.textContent = "Ошибка соединения.";
+    loginMessage.className = "error";
+  } finally {
+    loginBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await fetch("/api/logout", {
+    method: "POST",
+    credentials: "same-origin"
+  });
+
+  showLogin();
+});
+
+saveBtn.addEventListener("click", async () => {
+  message.textContent = "";
+  message.className = "";
+
+  const text = body.value.trim();
+
+  if (!text) {
+    message.textContent = "Напиши текст записи.";
+    message.className = "error";
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("body", text);
+
+  if (file.files.length > 0) {
+    formData.append("file", file.files[0]);
+  }
+
+  saveBtn.disabled = true;
+
+  try {
+    const response = await fetch("/api/posts", {
+      method: "POST",
+      credentials: "same-origin",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      message.textContent = data.error || "Не удалось сохранить запись.";
+      message.className = "error";
+      return;
+    }
+
+    body.value = "";
+    file.value = "";
+
+    message.textContent = "Запись сохранена.";
+    message.className = "ok";
+
+    loadPosts();
+
+  } catch {
+    message.textContent = "Ошибка соединения.";
+    message.className = "error";
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+async function loadPosts() {
+  posts.textContent = "Загрузка...";
+
+  try {
+    const response = await fetch("/api/posts", {
+      cache: "no-store"
+    });
+
+    const list = await response.json();
+
+    posts.innerHTML = "";
+
+    if (!list.length) {
+      posts.textContent = "Пока записей нет.";
+      return;
+    }
+
+    for (const post of list) {
+      const item = document.createElement("div");
+      item.className = "post";
+
+      const date = new Date(post.createdAt * 1000);
+
+      const dateElement = document.createElement("div");
+      dateElement.textContent = date.toLocaleString("ru-RU");
+
+      const textElement = document.createElement("p");
+      textElement.textContent = post.body;
+
+      item.appendChild(dateElement);
+      item.appendChild(textElement);
+
+      if (post.mediaUrl && post.mediaType === "image") {
+        const img = document.createElement("img");
+        img.src = post.mediaUrl;
+        img.alt = "";
+        item.appendChild(img);
+      }
+
+      if (post.mediaUrl && post.mediaType === "video") {
+        const video = document.createElement("video");
+        video.src = post.mediaUrl;
+        video.controls = true;
+        item.appendChild(video);
+      }
+
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "Удалить";
+
+      deleteButton.addEventListener("click", async () => {
+        if (!confirm("Удалить эту запись?")) {
+          return;
+        }
+
+        const result = await fetch("/api/posts/" + post.id, {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+
+        if (result.ok) {
+          loadPosts();
+        } else {
+          alert("Не удалось удалить запись.");
+        }
+      });
+
+      item.appendChild(deleteButton);
+      posts.appendChild(item);
+    }
+
+  } catch {
+    posts.textContent = "Не удалось загрузить записи.";
+  }
+}
+
+checkLogin();
+</script>
+
+</body>
+</html>
