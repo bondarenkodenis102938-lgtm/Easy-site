@@ -1,0 +1,16 @@
+name = "lenivec"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lenivec-db"
+database_id = "0d3a545d-6c8c-42fe-8d80-fa54b6b89704"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "lenivec-media"
