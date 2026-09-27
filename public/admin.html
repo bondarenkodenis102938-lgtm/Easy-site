@@ -79,6 +79,12 @@ button:hover,a:hover{background:#eee}
   <div id="cinemaPosts"></div>
 </div>
 
+<div class="box" style="margin-top:12px">
+<h3>Последние YouTube-ссылки</h3>
+<div class="muted">Последние 5 использованных ссылок. Нажми на ссылку, чтобы вставить её в поле YouTube.</div>
+<div id="youtubeHistory" style="margin-top:10px"></div>
+</div>
+
 <h2>Новая запись</h2>
 <div class="field"><label>Текст</label><textarea id="body" spellcheck="true" placeholder="Напиши текст записи..."></textarea></div>
 
@@ -138,6 +144,7 @@ const statPosts=document.getElementById("statPosts");
 const statImages=document.getElementById("statImages");
 const statVideos=document.getElementById("statVideos");
 const statYoutube=document.getElementById("statYoutube");
+const youtubeHistory=document.getElementById("youtubeHistory");
 const editBox=document.getElementById("editBox");
 const editId=document.getElementById("editId");
 const editBody=document.getElementById("editBody");
@@ -168,6 +175,7 @@ function showAdmin(){
   loginBox.hidden=true;
   adminBox.hidden=false;
   loadPosts();
+  loadYoutubeHistory();
 }
 
 function youtubeId(value){
@@ -300,6 +308,7 @@ saveBtn.addEventListener("click",async()=>{
     message.textContent="Запись сохранена.";
     message.className="ok";
     await loadPosts();
+    await loadYoutubeHistory();
   }catch{
     message.textContent="Ошибка соединения.";
     message.className="error";
@@ -319,6 +328,48 @@ async function loadPosts(){
     renderCinema();
   }catch{
     posts.textContent="Не удалось загрузить записи.";
+  }
+}
+
+async function loadYoutubeHistory(){
+  youtubeHistory.textContent="Загрузка...";
+  try{
+    const response=await fetch("/api/youtube-history",{cache:"no-store",credentials:"same-origin"});
+    if(response.status===401){
+      youtubeHistory.textContent="Сессия закончилась. Войдите снова.";
+      return;
+    }
+    const list=await response.json();
+    youtubeHistory.innerHTML="";
+    if(!Array.isArray(list)||!list.length){
+      youtubeHistory.textContent="История пока пустая.";
+      return;
+    }
+
+    list.forEach((item,index)=>{
+      const row=document.createElement("div");
+      row.style.marginBottom="7px";
+
+      const button=document.createElement("button");
+      button.type="button";
+      button.textContent=(index+1)+". "+item.url;
+      button.style.width="100%";
+      button.style.textAlign="left";
+      button.style.whiteSpace="nowrap";
+      button.style.overflow="hidden";
+      button.style.textOverflow="ellipsis";
+
+      button.addEventListener("click",()=>{
+        youtubeUrl.value=item.url;
+        youtubeUrl.focus();
+        youtubeUrl.scrollIntoView({behavior:"smooth",block:"center"});
+      });
+
+      row.appendChild(button);
+      youtubeHistory.appendChild(row);
+    });
+  }catch{
+    youtubeHistory.textContent="Не удалось загрузить историю ссылок.";
   }
 }
 
@@ -491,6 +542,7 @@ editSaveBtn.addEventListener("click",async()=>{
     editMessage.textContent="Изменения сохранены.";
     editMessage.className="ok";
     await loadPosts();
+    await loadYoutubeHistory();
   }catch{
     editMessage.textContent="Ошибка соединения.";
     editMessage.className="error";
