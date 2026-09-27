@@ -421,6 +421,27 @@ if (mediaButton && directMediaUrl) {
     );
   };
 };
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Backspace") {
+    return;
+  }
+
+  const target = event.target;
+  const isEditable =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable;
+
+  if (isEditable || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return;
+  }
+
+  if (history.length > 1) {
+    history.back();
+  }
+});
+
 </script>
 </body>
 </html>`;
