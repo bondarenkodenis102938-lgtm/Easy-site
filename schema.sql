@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS posts (
   created_at INTEGER NOT NULL,
   media_key TEXT,
   media_type TEXT,
-  original_name TEXT
+  original_name TEXT,
+  youtube_url TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at
