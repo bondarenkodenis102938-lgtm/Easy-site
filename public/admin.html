@@ -1,458 +1,529 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lenivec — админка</title>
-  <style>
-    body {
-      margin: 0;
-      background: #eee;
-      font-family: Arial, sans-serif;
-      color: #222;
-    }
-
-    main {
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-
-    .box {
-      background: white;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      margin-top: 0;
-    }
-
-    input, textarea, button {
-      font: inherit;
-      box-sizing: border-box;
-    }
-
-    input[type="text"],
-    input[type="password"],
-    textarea {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0 16px;
-      border: 1px solid #bbb;
-    }
-
-    textarea {
-      min-height: 180px;
-      resize: vertical;
-    }
-
-    button {
-      padding: 10px 18px;
-      margin-right: 8px;
-      cursor: pointer;
-    }
-
-    .post {
-      border-top: 1px solid #ddd;
-      padding: 16px 0;
-    }
-
-    .error {
-      color: #a00;
-    }
-
-    .ok {
-      color: #176b17;
-    }
-
-    img, video {
-      max-width: 100%;
-      margin-top: 12px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lenivec — Admin Tools</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eee;color:#222;font-family:Arial,sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px}
+.box{background:#fff;padding:20px;margin-bottom:16px;border:1px solid #ddd;border-radius:5px}
+h1,h2,h3{margin-top:0}
+input,textarea,button{font:inherit;box-sizing:border-box}
+input[type="text"],input[type="password"],input[type="url"],textarea,#search{width:100%;padding:12px;border:1px solid #bbb;border-radius:4px}
+textarea{min-height:170px;resize:vertical}
+label{display:block;margin-bottom:8px}
+.field{margin-bottom:14px}
+button,a{display:inline-block;padding:9px 14px;margin:0 8px 8px 0;border:1px solid #999;border-radius:4px;background:#fff;color:#222;text-decoration:none;cursor:pointer}
+button:hover,a:hover{background:#eee}
+.primary{background:#222;color:#fff;border-color:#222}
+.primary:hover{background:#444}
+.tool-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tool-row button{margin:0}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.stat{background:#eee;border:1px solid #ccc;border-radius:4px;padding:8px 10px;font-size:13px}
+.post{border-top:1px solid #ddd;padding:16px 0}
+.post:first-child{border-top:0}
+.post-date{color:#777;font-size:13px}
+.post-text{white-space:pre-wrap;line-height:1.5;margin:8px 0 12px}
+.thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;margin:12px 0;overflow:hidden}
+.thumb-button{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:#000}
+.thumb-button img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-button span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;border:1px solid #fff;border-radius:4px;padding:10px 14px}
+.edit-box{background:#f7f7f7;border:1px solid #ccc;padding:14px;margin-top:12px}
+.muted{color:#666;font-size:13px}
+.error{color:#a00}
+.ok{color:#176b17}
+.cinema{display:none}
+.cinema.open{display:block}
+.cinema-item{border-top:1px solid #ddd;padding:14px 0}
+.cinema-item:first-child{border-top:0}
+@media(max-width:600px){
+  main{padding:12px}
+  .box{padding:16px}
+}
+</style>
 </head>
-
 <body>
 <main>
+<section id="loginBox" class="box">
+<h1>Lenivec — вход</h1>
+<div class="field"><label>Логин</label><input id="username" type="text" value="Lenivec" autocomplete="username"></div>
+<div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
+<button id="loginBtn" class="primary">ВОЙТИ</button>
+<p id="loginMessage"></p>
+</section>
 
-  <section id="loginBox" class="box">
-    <h1>Lenivec — вход</h1>
+<section id="adminBox" class="box" hidden>
+<h1>Admin Tools</h1>
+<div class="muted">Управление сайтом доступно только после входа.</div>
 
-    <label>
-      Логин
-      <input id="username" type="text" value="Lenivec" autocomplete="username">
-    </label>
+<div class="stats">
+  <div class="stat">Постов: <strong id="statPosts">0</strong></div>
+  <div class="stat">Фото: <strong id="statImages">0</strong></div>
+  <div class="stat">Видео: <strong id="statVideos">0</strong></div>
+  <div class="stat">YouTube: <strong id="statYoutube">0</strong></div>
+</div>
 
-    <label>
-      Пароль
-      <input id="password" type="password" autocomplete="current-password">
-    </label>
+<div class="tool-row">
+  <button id="cinemaBtn">КИНОТЕАТР</button>
+  <button id="allPostsBtn">ВСЕ ПОСТЫ</button>
+  <button id="refreshBtn">ОБНОВИТЬ</button>
+  <button id="logoutBtn">ВЫЙТИ</button>
+</div>
 
-    <button id="loginBtn">ВОЙТИ</button>
+<div id="cinema" class="cinema box">
+  <h2>Кинотеатр</h2>
+  <p class="muted">YouTube-видео загружаются только после нажатия «Смотреть», чтобы страница оставалась лёгкой.</p>
+  <div id="cinemaPosts"></div>
+</div>
 
-    <p id="loginMessage"></p>
-  </section>
+<h2>Новая запись</h2>
+<div class="field"><label>Текст</label><textarea id="body" spellcheck="true" placeholder="Напиши текст записи..."></textarea></div>
 
-  <section id="adminBox" class="box" hidden>
-    <h1>Админка</h1>
+<div class="field">
+  <label>Фото или видео</label>
+  <input id="file" type="file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg">
+</div>
 
-    <label>
-      Текст записи
-      <textarea id="body" spellcheck="true" placeholder="Напиши текст записи..."></textarea>
-    </label>
+<div class="field">
+  <label>YouTube</label>
+  <input id="youtubeUrl" type="url" placeholder="https://youtu.be/... или https://www.youtube.com/watch?v=..." inputmode="url" autocomplete="off">
+  <div class="muted">Можно указать либо файл, либо YouTube-ссылку.</div>
+</div>
 
-    <label>
-      Фото или видео
-      <input
-        id="file"
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg">
-    </label>
+<button id="saveBtn" class="primary">СОХРАНИТЬ</button>
+<p id="message"></p>
 
-    <label>
-      Или ссылка на YouTube
-      <input id="youtubeUrl" type="url" placeholder="https://youtu.be/..." inputmode="url" autocomplete="off">
-    </label>
+<h2>Записи</h2>
+<input id="search" type="text" placeholder="Поиск по тексту, ID или ссылке YouTube...">
+<div style="height:10px"></div>
+<div id="posts"></div>
 
-    <p style="color:#666;font-size:13px;margin-top:-8px;">
-      Загрузи файл или вставь ссылку YouTube. Одновременно нельзя.
-    </p>
-
-    <br><br>
-
-    <button id="saveBtn">СОХРАНИТЬ</button>
-    <button id="logoutBtn">ВЫЙТИ</button>
-
-    <p id="message">Можно писать с клавиатуры обычным способом. Backspace удаляет текст; вне поля ввода возвращает назад.</p>
-
-    <h2>Записи</h2>
-    <div id="posts"></div>
-  </section>
-
+<div id="editBox" class="edit-box" hidden>
+  <h3>Редактировать запись <span id="editId"></span></h3>
+  <div class="field"><label>Текст</label><textarea id="editBody" spellcheck="true"></textarea></div>
+  <div class="field"><label>YouTube</label><input id="editYoutube" type="url" placeholder="Оставь пустым, чтобы убрать YouTube"></div>
+  <div class="muted">Загруженное фото/видео при редактировании сохраняется. Для него YouTube добавить нельзя.</div>
+  <br>
+  <button id="editSaveBtn" class="primary">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+  <button id="editCancelBtn">ОТМЕНА</button>
+  <p id="editMessage"></p>
+</div>
+</section>
 </main>
 
 <script>
-const loginBox = document.getElementById("loginBox");
-const adminBox = document.getElementById("adminBox");
+const loginBox=document.getElementById("loginBox");
+const adminBox=document.getElementById("adminBox");
+const username=document.getElementById("username");
+const password=document.getElementById("password");
+const loginBtn=document.getElementById("loginBtn");
+const loginMessage=document.getElementById("loginMessage");
+const body=document.getElementById("body");
+const file=document.getElementById("file");
+const youtubeUrl=document.getElementById("youtubeUrl");
+const saveBtn=document.getElementById("saveBtn");
+const logoutBtn=document.getElementById("logoutBtn");
+const refreshBtn=document.getElementById("refreshBtn");
+const cinemaBtn=document.getElementById("cinemaBtn");
+const allPostsBtn=document.getElementById("allPostsBtn");
+const cinema=document.getElementById("cinema");
+const cinemaPosts=document.getElementById("cinemaPosts");
+const search=document.getElementById("search");
+const message=document.getElementById("message");
+const posts=document.getElementById("posts");
+const statPosts=document.getElementById("statPosts");
+const statImages=document.getElementById("statImages");
+const statVideos=document.getElementById("statVideos");
+const statYoutube=document.getElementById("statYoutube");
+const editBox=document.getElementById("editBox");
+const editId=document.getElementById("editId");
+const editBody=document.getElementById("editBody");
+const editYoutube=document.getElementById("editYoutube");
+const editSaveBtn=document.getElementById("editSaveBtn");
+const editCancelBtn=document.getElementById("editCancelBtn");
+const editMessage=document.getElementById("editMessage");
 
-const username = document.getElementById("username");
-const password = document.getElementById("password");
-const loginBtn = document.getElementById("loginBtn");
-const loginMessage = document.getElementById("loginMessage");
+let currentPosts=[];
+let editingId=null;
 
-const body = document.getElementById("body");
-const file = document.getElementById("file");
-const youtubeUrl = document.getElementById("youtubeUrl");
-const saveBtn = document.getElementById("saveBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const message = document.getElementById("message");
-const posts = document.getElementById("posts");
-
-async function checkLogin() {
-  try {
-    const response = await fetch("/api/me", {
-      cache: "no-store"
-    });
-
-    const data = await response.json();
-
-    if (data.loggedIn) {
-      showAdmin();
-    } else {
-      showLogin();
-    }
-  } catch {
+async function checkLogin(){
+  try{
+    const response=await fetch("/api/me",{cache:"no-store"});
+    const data=await response.json();
+    if(data.loggedIn) showAdmin(); else showLogin();
+  }catch{
     showLogin();
   }
 }
 
-function showLogin() {
-  loginBox.hidden = false;
-  adminBox.hidden = true;
+function showLogin(){
+  loginBox.hidden=false;
+  adminBox.hidden=true;
 }
 
-function showAdmin() {
-  loginBox.hidden = true;
-  adminBox.hidden = false;
+function showAdmin(){
+  loginBox.hidden=true;
+  adminBox.hidden=false;
   loadPosts();
 }
 
-loginBtn.addEventListener("click", async () => {
-  loginMessage.textContent = "";
+function youtubeId(value){
+  try{
+    const url=new URL(value);
+    let id="";
+    if(url.hostname==="youtu.be"||url.hostname==="www.youtu.be"){
+      id=url.pathname.slice(1).split("/")[0];
+    }else if(url.hostname==="youtube.com"||url.hostname==="www.youtube.com"||url.hostname==="m.youtube.com"){
+      if(url.pathname==="/watch") id=url.searchParams.get("v")||"";
+      else if(url.pathname.startsWith("/shorts/")) id=url.pathname.slice(8).split("/")[0];
+      else if(url.pathname.startsWith("/embed/")) id=url.pathname.slice(7).split("/")[0];
+    }
+    return /^[A-Za-z0-9_-]{11}$/.test(id)?id:null;
+  }catch{
+    return null;
+  }
+}
 
-  const user = username.value.trim();
-  const pass = password.value;
+function youtubeEmbedUrl(value){
+  const id=youtubeId(value);
+  return id?"https://www.youtube.com/embed/"+encodeURIComponent(id)+"?controls=1&playsinline=1&rel=0":"about:blank";
+}
 
-  if (!user || !pass) {
-    loginMessage.textContent = "Введите логин и пароль.";
-    loginMessage.className = "error";
+function addYoutubePlayer(parent,url){
+  const id=youtubeId(url);
+  if(!id) return;
+  const wrap=document.createElement("div");
+  wrap.className="thumb-wrap";
+  const button=document.createElement("button");
+  button.className="thumb-button";
+  button.type="button";
+  const image=document.createElement("img");
+  image.src="https://i.ytimg.com/vi/"+encodeURIComponent(id)+"/hqdefault.jpg";
+  image.alt="Превью YouTube";
+  const label=document.createElement("span");
+  label.textContent="▶ Смотреть";
+  button.appendChild(image);
+  button.appendChild(label);
+  button.addEventListener("click",()=>{
+    const iframe=document.createElement("iframe");
+    iframe.src=youtubeEmbedUrl(url);
+    iframe.title="YouTube видео";
+    iframe.frameBorder="0";
+    iframe.allowFullscreen=true;
+    iframe.style.position="absolute";
+    iframe.style.inset="0";
+    iframe.style.width="100%";
+    iframe.style.height="100%";
+    iframe.style.border="0";
+    wrap.innerHTML="";
+    wrap.appendChild(iframe);
+  });
+  wrap.appendChild(button);
+  parent.appendChild(wrap);
+}
+
+loginBtn.addEventListener("click",async()=>{
+  loginMessage.textContent="";
+  const user=username.value.trim();
+  const pass=password.value;
+  if(!user||!pass){
+    loginMessage.textContent="Введите логин и пароль.";
+    loginMessage.className="error";
     return;
   }
-
-  loginBtn.disabled = true;
-
-  try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        username: user,
-        password: pass
-      })
+  loginBtn.disabled=true;
+  try{
+    const response=await fetch("/api/login",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      credentials:"same-origin",
+      body:JSON.stringify({username:user,password:pass})
     });
-
-    if (!response.ok) {
-      loginMessage.textContent = "Неверный логин или пароль.";
-      loginMessage.className = "error";
+    if(!response.ok){
+      loginMessage.textContent="Неверный логин или пароль.";
+      loginMessage.className="error";
       return;
     }
-
-    password.value = "";
+    password.value="";
     showAdmin();
-
-  } catch {
-    loginMessage.textContent = "Ошибка соединения.";
-    loginMessage.className = "error";
-  } finally {
-    loginBtn.disabled = false;
+  }catch{
+    loginMessage.textContent="Ошибка соединения.";
+    loginMessage.className="error";
+  }finally{
+    loginBtn.disabled=false;
   }
 });
 
-logoutBtn.addEventListener("click", async () => {
-  await fetch("/api/logout", {
-    method: "POST",
-    credentials: "same-origin"
-  });
-
+logoutBtn.addEventListener("click",async()=>{
+  await fetch("/api/logout",{method:"POST",credentials:"same-origin"});
   showLogin();
 });
 
-saveBtn.addEventListener("click", async () => {
-  message.textContent = "";
-  message.className = "";
-
-  const text = body.value.trim();
-
-  if (!text) {
-    message.textContent = "Напиши текст записи.";
-    message.className = "error";
+saveBtn.addEventListener("click",async()=>{
+  message.textContent="";
+  message.className="";
+  const text=body.value.trim();
+  const yt=youtubeUrl.value.trim();
+  if(!text&&!file.files.length&&!yt){
+    message.textContent="Добавь текст, файл или YouTube-ссылку.";
+    message.className="error";
     return;
   }
-
-  if (file.files.length > 0 && youtubeUrl.value.trim()) {
-    message.textContent = "Выбери либо файл, либо ссылку YouTube.";
-    message.className = "error";
+  if(file.files.length&&yt){
+    message.textContent="Выбери либо файл, либо YouTube-ссылку.";
+    message.className="error";
     return;
   }
-
-  const formData = new FormData();
-  formData.append("body", text);
-
-  if (file.files.length > 0) {
-    formData.append("file", file.files[0]);
-  }
-
-  if (youtubeUrl.value.trim()) {
-    formData.append("youtubeUrl", youtubeUrl.value.trim());
-  }
-
-  saveBtn.disabled = true;
-
-  try {
-    const response = await fetch("/api/posts", {
-      method: "POST",
-      credentials: "same-origin",
-      body: formData
+  const formData=new FormData();
+  formData.append("body",text);
+  if(file.files.length) formData.append("file",file.files[0]);
+  if(yt) formData.append("youtubeUrl",yt);
+  saveBtn.disabled=true;
+  try{
+    const response=await fetch("/api/posts",{
+      method:"POST",
+      credentials:"same-origin",
+      body:formData
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      message.textContent = data.error || "Не удалось сохранить запись.";
-      message.className = "error";
+    const data=await response.json();
+    if(!response.ok){
+      message.textContent=data.error||"Не удалось сохранить запись.";
+      message.className="error";
       return;
     }
-
-    body.value = "";
-    file.value = "";
-    youtubeUrl.value = "";
-
-    message.textContent = "Запись сохранена.";
-    message.className = "ok";
-
-    loadPosts();
-
-  } catch {
-    message.textContent = "Ошибка соединения.";
-    message.className = "error";
-  } finally {
-    saveBtn.disabled = false;
+    body.value="";
+    file.value="";
+    youtubeUrl.value="";
+    message.textContent="Запись сохранена.";
+    message.className="ok";
+    await loadPosts();
+  }catch{
+    message.textContent="Ошибка соединения.";
+    message.className="error";
+  }finally{
+    saveBtn.disabled=false;
   }
 });
 
-function youtubeEmbedUrl(value) {
-  try {
-    const url = new URL(value);
-
-    let id = "";
-
-    if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") {
-      id = url.pathname.slice(1).split("/")[0];
-    } else if (
-      url.hostname === "youtube.com" ||
-      url.hostname === "www.youtube.com" ||
-      url.hostname === "m.youtube.com"
-    ) {
-      if (url.pathname === "/watch") {
-        id = url.searchParams.get("v") || "";
-      } else if (url.pathname.startsWith("/shorts/")) {
-        id = url.pathname.slice("/shorts/".length).split("/")[0];
-      } else if (url.pathname.startsWith("/embed/")) {
-        id = url.pathname.slice("/embed/".length).split("/")[0];
-      }
-    }
-
-    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
-      throw new Error("Invalid YouTube URL");
-    }
-
-    return "https://www.youtube.com/embed/" + encodeURIComponent(id) + "?controls=1&playsinline=1&rel=0";
-  } catch {
-    return "about:blank";
+async function loadPosts(){
+  posts.textContent="Загрузка...";
+  try{
+    const response=await fetch("/api/posts",{cache:"no-store"});
+    const list=await response.json();
+    currentPosts=Array.isArray(list)?list:[];
+    updateStats();
+    renderPosts();
+    renderCinema();
+  }catch{
+    posts.textContent="Не удалось загрузить записи.";
   }
 }
 
-async function loadPosts() {
-  posts.textContent = "Загрузка...";
+function updateStats(){
+  statPosts.textContent=currentPosts.length;
+  statImages=currentPosts.filter(p=>p.mediaType==="image").length;
+  document.getElementById("statImages").textContent=statImages;
+  statVideos.textContent=currentPosts.filter(p=>p.mediaType==="video").length;
+  statYoutube.textContent=currentPosts.filter(p=>p.youtubeUrl).length;
+}
 
-  try {
-    const response = await fetch("/api/posts", {
-      cache: "no-store"
+function matches(post){
+  const q=search.value.trim().toLowerCase();
+  if(!q) return true;
+  return String(post.id).includes(q) ||
+    String(post.body||"").toLowerCase().includes(q) ||
+    String(post.youtubeUrl||"").toLowerCase().includes(q) ||
+    String(post.originalName||"").toLowerCase().includes(q);
+}
+
+function makePostItem(post){
+  const item=document.createElement("div");
+  item.className="post";
+
+  const date=document.createElement("div");
+  date.className="post-date";
+  date.textContent=new Date(post.createdAt).toLocaleString("ru-RU");
+
+  const text=document.createElement("div");
+  text.className="post-text";
+  text.textContent=post.body||"";
+
+  item.appendChild(date);
+  item.appendChild(text);
+
+  if(post.youtubeUrl) addYoutubePlayer(item,post.youtubeUrl);
+
+  if(post.mediaUrl&&post.mediaType==="image"){
+    const img=document.createElement("img");
+    img.src=post.mediaUrl;
+    img.alt="";
+    img.style.maxWidth="100%";
+    img.style.marginTop="12px";
+    item.appendChild(img);
+  }
+
+  if(post.mediaUrl&&post.mediaType==="video"){
+    const video=document.createElement("video");
+    video.src=post.mediaUrl;
+    video.controls=true;
+    video.preload="metadata";
+    video.style.maxWidth="100%";
+    video.style.marginTop="12px";
+    item.appendChild(video);
+  }
+
+  const actions=document.createElement("div");
+
+  const editButton=document.createElement("button");
+  editButton.textContent="Редактировать";
+  editButton.addEventListener("click",()=>openEditor(post));
+  actions.appendChild(editButton);
+
+  if(post.youtubeUrl){
+    const youtubeLink=document.createElement("a");
+    youtubeLink.href=post.youtubeUrl;
+    youtubeLink.target="_blank";
+    youtubeLink.rel="noopener";
+    youtubeLink.textContent="YouTube";
+    actions.appendChild(youtubeLink);
+  }
+
+  const openButton=document.createElement("a");
+  openButton.href="/post/"+encodeURIComponent(post.id);
+  openButton.target="_blank";
+  openButton.rel="noopener";
+  openButton.textContent="Открыть";
+  actions.appendChild(openButton);
+
+  const deleteButton=document.createElement("button");
+  deleteButton.textContent="Удалить";
+  deleteButton.addEventListener("click",async()=>{
+    if(!confirm("Удалить эту запись?")) return;
+    const result=await fetch("/api/posts/"+post.id,{
+      method:"DELETE",
+      credentials:"same-origin"
     });
+    if(result.ok) await loadPosts();
+    else alert("Не удалось удалить запись.");
+  });
+  actions.appendChild(deleteButton);
 
-    const list = await response.json();
+  item.appendChild(actions);
+  return item;
+}
 
-    posts.innerHTML = "";
+function renderPosts(){
+  posts.innerHTML="";
+  const list=currentPosts.filter(matches);
+  if(!list.length){
+    posts.textContent="Ничего не найдено.";
+    return;
+  }
+  list.forEach(post=>posts.appendChild(makePostItem(post)));
+}
 
-    if (!list.length) {
-      posts.textContent = "Пока записей нет.";
+function renderCinema(){
+  cinemaPosts.innerHTML="";
+  const list=currentPosts.filter(p=>p.youtubeUrl);
+  if(!list.length){
+    cinemaPosts.textContent="YouTube-видео пока нет.";
+    return;
+  }
+  list.forEach(post=>{
+    const item=document.createElement("div");
+    item.className="cinema-item";
+    const title=document.createElement("strong");
+    title.textContent="Пост #"+post.id;
+    item.appendChild(title);
+    const text=document.createElement("div");
+    text.className="post-text";
+    text.textContent=post.body||"";
+    item.appendChild(text);
+    addYoutubePlayer(item,post.youtubeUrl);
+    const link=document.createElement("a");
+    link.href="/post/"+post.id;
+    link.target="_blank";
+    link.rel="noopener";
+    link.textContent="Открыть пост";
+    item.appendChild(link);
+    cinemaPosts.appendChild(item);
+  });
+}
+
+function openEditor(post){
+  editingId=post.id;
+  editId.textContent="#"+post.id;
+  editBody.value=post.body||"";
+  editYoutube.value=post.youtubeUrl||"";
+  editMessage.textContent="";
+  editMessage.className="";
+  editBox.hidden=false;
+  editBox.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+editCancelBtn.addEventListener("click",()=>{
+  editBox.hidden=true;
+  editingId=null;
+});
+
+editSaveBtn.addEventListener("click",async()=>{
+  if(editingId===null) return;
+  editMessage.textContent="";
+  editMessage.className="";
+  const formData=new FormData();
+  formData.append("body",editBody.value.trim());
+  formData.append("youtubeUrl",editYoutube.value.trim());
+  editSaveBtn.disabled=true;
+  try{
+    const response=await fetch("/api/posts/"+editingId,{
+      method:"PATCH",
+      credentials:"same-origin",
+      body:formData
+    });
+    const data=await response.json();
+    if(!response.ok){
+      editMessage.textContent=data.error||"Не удалось изменить запись.";
+      editMessage.className="error";
       return;
     }
-
-    for (const post of list) {
-      const item = document.createElement("div");
-      item.className = "post";
-
-      const date = new Date(post.createdAt);
-
-      const dateElement = document.createElement("div");
-      dateElement.textContent = date.toLocaleString("ru-RU");
-
-      const textElement = document.createElement("p");
-      textElement.textContent = post.body;
-
-      item.appendChild(dateElement);
-      item.appendChild(textElement);
-
-      if (post.youtubeUrl) {
-        const wrap = document.createElement("div");
-        wrap.style.position = "relative";
-        wrap.style.width = "100%";
-        wrap.style.aspectRatio = "16 / 9";
-        wrap.style.marginTop = "12px";
-        wrap.style.background = "#000";
-
-        const iframe = document.createElement("iframe");
-        iframe.src = youtubeEmbedUrl(post.youtubeUrl);
-        iframe.title = "YouTube видео";
-        iframe.frameBorder = "0";
-        iframe.allowFullscreen = true;
-        iframe.style.position = "absolute";
-        iframe.style.inset = "0";
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-
-        wrap.appendChild(iframe);
-        item.appendChild(wrap);
-
-        const youtubeLink = document.createElement("a");
-        youtubeLink.href = post.youtubeUrl;
-        youtubeLink.target = "_blank";
-        youtubeLink.rel = "noopener";
-        youtubeLink.textContent = "Открыть на YouTube";
-        item.appendChild(youtubeLink);
-      }
-
-      if (post.mediaUrl && post.mediaType === "image") {
-        const img = document.createElement("img");
-        img.src = post.mediaUrl;
-        img.alt = "";
-        item.appendChild(img);
-      }
-
-      if (post.mediaUrl && post.mediaType === "video") {
-        const video = document.createElement("video");
-        video.src = post.mediaUrl;
-        video.controls = true;
-        item.appendChild(video);
-      }
-
-      const deleteButton = document.createElement("button");
-      deleteButton.textContent = "Удалить";
-
-      deleteButton.addEventListener("click", async () => {
-        if (!confirm("Удалить эту запись?")) {
-          return;
-        }
-
-        const result = await fetch("/api/posts/" + post.id, {
-          method: "DELETE",
-          credentials: "same-origin"
-        });
-
-        if (result.ok) {
-          loadPosts();
-        } else {
-          alert("Не удалось удалить запись.");
-        }
-      });
-
-      item.appendChild(deleteButton);
-      posts.appendChild(item);
-    }
-
-  } catch {
-    posts.textContent = "Не удалось загрузить записи.";
+    editMessage.textContent="Изменения сохранены.";
+    editMessage.className="ok";
+    await loadPosts();
+  }catch{
+    editMessage.textContent="Ошибка соединения.";
+    editMessage.className="error";
+  }finally{
+    editSaveBtn.disabled=false;
   }
-}
+});
 
-document.addEventListener("keydown", (event) => {
-  if (event.key !== "Backspace") {
-    return;
-  }
+search.addEventListener("input",renderPosts);
+refreshBtn.addEventListener("click",loadPosts);
+cinemaBtn.addEventListener("click",()=>{
+  cinema.classList.add("open");
+  cinema.scrollIntoView({behavior:"smooth",block:"start"});
+});
+allPostsBtn.addEventListener("click",()=>{
+  cinema.classList.remove("open");
+  document.getElementById("posts").scrollIntoView({behavior:"smooth",block:"start"});
+});
 
-  const target = event.target;
-  const isEditable =
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
+document.addEventListener("keydown",(event)=>{
+  if(event.key!=="Backspace") return;
+  const target=event.target;
+  const editable=
+    target instanceof HTMLInputElement||
+    target instanceof HTMLTextAreaElement||
+    target instanceof HTMLSelectElement||
     target?.isContentEditable;
-
-  if (isEditable || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-    return;
-  }
-
-  if (history.length > 1) {
-    history.back();
-  }
+  if(editable||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey) return;
+  if(history.length>1) history.back();
 });
 
 checkLogin();
 </script>
-
 </body>
 </html>
