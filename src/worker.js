@@ -576,6 +576,7 @@ async function createPost(request, env) {
 
   const body = String(form.get("body") || "").trim();
   const file = form.get("file");
+  const youtubeUrl = String(form.get("youtubeUrl") || "").trim();
 
   if (!body && !(file instanceof File)) {
     return json(
@@ -594,6 +595,28 @@ async function createPost(request, env) {
   let mediaKey = null;
   let mediaType = null;
   let originalName = null;
+  let storedYouTubeUrl = null;
+
+  if (youtubeUrl && file instanceof File && file.size > 0) {
+    return json(
+      { error: "Добавь либо файл, либо ссылку YouTube — не оба сразу" },
+      400
+    );
+  }
+
+  if (youtubeUrl) {
+    const youtubeId = extractYouTubeId(youtubeUrl);
+
+    if (!youtubeId) {
+      return json(
+        { error: "Неверная ссылка YouTube" },
+        400
+      );
+    }
+
+    storedYouTubeUrl =
+      "https://www.youtube.com/watch?v=" + youtubeId;
+  }
 
   if (file instanceof File && file.size > 0) {
     const type = file.type.toLowerCase();
@@ -660,15 +683,16 @@ async function createPost(request, env) {
 
   const result = await env.DB.prepare(
     `INSERT INTO posts
-     (body, created_at, media_key, media_type, original_name)
-     VALUES (?, ?, ?, ?, ?)`
+     (body, created_at, media_key, media_type, original_name, youtube_url)
+     VALUES (?, ?, ?, ?, ?, ?)`
   )
     .bind(
       body,
       now,
       mediaKey,
       mediaType,
-      originalName
+      originalName,
+      storedYouTubeUrl
     )
     .run();
 
