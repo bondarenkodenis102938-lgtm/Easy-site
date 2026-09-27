@@ -164,6 +164,15 @@ export default {
         return await addKinoComment(request, env);
       }
 
+      const userAgent = request.headers.get("User-Agent") || "";
+
+      if (
+        (url.pathname === "/" || url.pathname === "/index.html") &&
+        /Windows Phone|IEMobile/i.test(userAgent)
+      ) {
+        return await legacyHomePage(request, env);
+      }
+
       // Всё остальное — обычные HTML-файлы сайта
       if (url.pathname === "/" || url.pathname === "/index.html") {
         return env.ASSETS.fetch(
@@ -268,6 +277,114 @@ export default {
  }
 
 
+
+
+ async function legacyHomePage(request, env) {
+   const { results } = await env.DB.prepare(
+     "SELECT id, body, created_at, media_key, media_type, original_name, youtube_url " +
+     "FROM posts ORDER BY created_at DESC, id DESC"
+   ).all();
+
+   return new Response(renderLegacyHome(results, request.url), {
+     headers: {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "no-store"
+     }
+   });
+ }
+
+ function renderLegacyHome(posts, requestUrl) {
+   let html = "";
+
+   if (!posts.length) {
+     html = "<p>Пока записей нет.</p>";
+   }
+
+   for (const post of posts) {
+     const dateText = Number.isFinite(Number(post.created_at))
+       ? new Date(Number(post.created_at)).toLocaleString("ru-RU")
+       : "";
+
+     html +=
+       '<div class="post">' +
+       '<div class="date">' + escapeHtml(dateText) + '</div>' +
+       '<div class="author">Опубликовал: Lenivec</div>' +
+       '<div class="text">' + escapeHtml(post.body || "") + '</div>';
+
+     if (post.media_key && post.media_type === "image") {
+       const path = "/media/" + encodeURIComponent(post.media_key);
+       html += '<img src="' + escapeHtml(path) + '" alt="Фото">';
+     }
+
+     if (post.media_key && post.media_type === "video") {
+       const path = "/media/" + encodeURIComponent(post.media_key);
+       const type = videoMimeForKey(post.media_key);
+
+       if (type === "video/mp4") {
+         html +=
+           '<video class="video" controls preload="metadata">' +
+           '<source src="' + escapeHtml(path) + '" type="video/mp4">' +
+           'Ваш браузер не умеет проигрывать это видео.' +
+           '</video>';
+       } else {
+         html +=
+           '<p>Это видео лучше смотреть на современном телефоне.</p>';
+       }
+
+       html += '<p><a href="' + escapeHtml(path) + '">Открыть видео</a></p>';
+     }
+
+     if (post.youtube_url) {
+       html +=
+         '<p><strong>YouTube:</strong> ' +
+         '<a href="' + escapeHtml(post.youtube_url) + '">Открыть видео</a></p>';
+     }
+
+     html +=
+       '<p><a href="/post/' + Number(post.id) + '">Открыть пост</a></p>' +
+       '</div>';
+   }
+
+   return '<!doctype html>' +
+   '<html lang="ru"><head>' +
+   '<meta charset="utf-8">' +
+   '<meta http-equiv="X-UA-Compatible" content="IE=edge">' +
+   '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+   '<title>Lenivec</title>' +
+   '<style>' +
+   'body{background:#eee;color:#222;font-family:Arial,sans-serif;font-size:16px;margin:0}' +
+   'main{width:94%;max-width:700px;margin:0 auto;padding:12px 0 24px}' +
+   'header,.post{background:#fff;border:1px solid #ccc;padding:12px;margin-bottom:12px}' +
+   'h1{font-size:24px;margin:0 0 6px}' +
+   '.small,.date,.author{color:#666;font-size:12px}' +
+   '.text{white-space:pre-wrap;margin-top:8px;line-height:1.4}' +
+   'img,.video{display:block;max-width:100%;margin-top:10px}' +
+   '.video{width:100%}' +
+   'a{color:#222}' +
+   '</style></head><body><main>' +
+   '<header><h1>Lenivec</h1><div class="small">Версия для старого телефона</div>' +
+   '<p><a href="/kino">КИНО</a></p></header>' +
+   html +
+   '</main></body></html>';
+ }
+
+ function videoMimeForKey(key) {
+   const value = String(key || "").toLowerCase();
+
+   if (value.slice(-4) === ".mp4") {
+     return "video/mp4";
+   }
+
+   if (value.slice(-5) === ".webm") {
+     return "video/webm";
+   }
+
+   if (value.slice(-4) === ".ogv") {
+     return "video/ogg";
+   }
+
+   return "";
+ }
 
  async function kinoPage(request, env) {
    const { results } = await env.DB.prepare(
