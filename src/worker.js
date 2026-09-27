@@ -455,7 +455,21 @@ export default {
 
  
 function renderKinoPage(videos, comments, requestUrl, userAgent) {
-  const isOldPhone = /Windows Phone|IEMobile/i.test(String(userAgent || ""));
+  const kinoUrl = new URL(requestUrl);
+  const requestedMode = kinoUrl.searchParams.get("mode");
+  const browserIsOldPhone = /Windows Phone|IEMobile/i.test(String(userAgent || ""));
+  const isOldPhone =
+    requestedMode === "lumia"
+      ? true
+      : requestedMode === "modern"
+        ? false
+        : browserIsOldPhone;
+  const modeLinks =
+    '<div class="mode-switch">' +
+    '<strong>Версия:</strong> ' +
+    '<a href="/kino?mode=modern">Обычная</a> ' +
+    '<a href="/kino?mode=lumia">Lumia</a>' +
+    '</div>';
   let videoHtml = "";
 
   if (!videos.length) {
@@ -604,6 +618,8 @@ function renderKinoPage(videos, comments, requestUrl, userAgent) {
   '.film-video{display:block;width:100%;max-width:100%;margin-top:10px;background:#000}' +
   '.youtube-box{width:100%;margin-top:10px;background:#000}' +
   '.youtube-player{display:block;width:100%;height:430px;border:0}' +
+  '.mode-switch{background:#f5f5f5;border:1px solid #ccc;padding:8px;margin:10px 0}' +
+  '.mode-switch a{padding:5px 8px}' +
   '.old-video-note{background:#f5f5f5;border:1px solid #ccc;padding:10px;margin-top:10px}' +
   'a,button{display:inline-block;padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #999;background:#fff;color:#222;text-decoration:none;font:inherit;cursor:pointer}' +
   'input,textarea{display:block;width:100%;padding:9px;border:1px solid #aaa;font:inherit;box-sizing:border-box;margin:6px 0 10px}' +
@@ -614,6 +630,7 @@ function renderKinoPage(videos, comments, requestUrl, userAgent) {
   '</style></head><body><main>' +
   '<header><h1>Lenivec — КИНО</h1>' +
   '<div class="small">Отдельное пространство для видео</div>' +
+  modeLinks +
   '<div class="compat">' + escapeHtml(hint) + '</div>' +
   '<a href="/">← На главную</a></header>' +
   '<div class="small">Для Lumia 625 лучше всего подходят загруженные MP4/H.264. YouTube-ссылки остаются обычными ссылками на старом телефоне.</div>' +
