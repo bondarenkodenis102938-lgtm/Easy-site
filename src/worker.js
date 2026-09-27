@@ -317,15 +317,17 @@ a{color:#222}
    let media = "";
 
    if (youtubeEmbedUrl) {
+     const thumbnailUrl =
+       "https://i.ytimg.com/vi/" +
+       encodeURIComponent(youtubeId) +
+       "/hqdefault.jpg";
+
      media = `
        <div class="youtube-wrap">
-         <iframe
-           class="youtube-player"
-           src="${escapeHtml(youtubeEmbedUrl)}"
-           title="YouTube видео"
-           frameborder="0"
-           allowfullscreen
-         ></iframe>
+         <button class="youtube-start" type="button" data-embed="${escapeHtml(youtubeEmbedUrl)}">
+           <img src="${escapeHtml(thumbnailUrl)}" alt="Превью YouTube видео">
+           <span>▶ Смотреть</span>
+         </button>
        </div>
        <p><a href="${escapeHtml(post.youtube_url)}" target="_blank" rel="noopener">Открыть на YouTube</a></p>
      `;
@@ -381,8 +383,11 @@ header{background:#fff;padding:18px 20px;margin-bottom:18px;border:1px solid #dd
 .text{white-space:pre-wrap;line-height:1.5;margin-top:15px}
 .media{display:block;max-width:100%;margin-top:18px;border-radius:4px}
 video.media{width:100%}
-.youtube-wrap{position:relative;width:100%;aspect-ratio:16/9;margin-top:18px;background:#000}
+.youtube-wrap{position:relative;width:100%;aspect-ratio:16/9;margin-top:18px;background:#000;overflow:hidden}
 .youtube-player{position:absolute;inset:0;width:100%;height:100%;border:0}
+.youtube-start{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:#000;cursor:pointer}
+.youtube-start img{display:block;width:100%;height:100%;object-fit:cover;margin:0}
+.youtube-start span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 16px;background:rgba(0,0,0,.75);color:#fff;border:1px solid #fff;border-radius:4px;font:inherit}
 .actions{margin-top:18px}
 button,a{display:inline-block;margin-right:8px;padding:10px 16px;background:#fff;border:1px solid #999;color:#222;text-decoration:none;cursor:pointer;font:inherit}
 button:hover,a:hover{background:#eee}
@@ -437,6 +442,27 @@ shareButton.onclick = () => {
     "Пост Lenivec"
   );
 };
+
+document.querySelectorAll(".youtube-start").forEach((button) => {
+  button.onclick = () => {
+    const embed = button.dataset.embed;
+
+    if (!embed) {
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.className = "youtube-player";
+    iframe.src = embed;
+    iframe.title = "YouTube видео";
+    iframe.frameBorder = "0";
+    iframe.allowFullscreen = true;
+
+    const wrap = button.parentElement;
+    wrap.innerHTML = "";
+    wrap.appendChild(iframe);
+  };
+});
 
 const mediaButton = document.getElementById("share-media");
 const directMediaUrl = ${JSON.stringify(mediaUrl)};
