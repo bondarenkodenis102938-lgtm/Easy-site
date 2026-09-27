@@ -45,8 +45,7 @@ export default {
       // Получить все записи
       if (url.pathname === "/api/posts" && request.method === "GET") {
         const { results } = await env.DB.prepare(
-          `SELECT id, body, created_at, media_key, media_type, original_name
-           FROM posts
+          `SELECT id, body, created_at, media_key, media_type, original_name, youtube_url FROM posts
            ORDER BY created_at DESC, id DESC`
         ).all();
 
@@ -59,7 +58,8 @@ export default {
               ? `/media/${encodeURIComponent(post.media_key)}`
               : null,
             mediaType: post.media_type,
-            originalName: post.original_name
+            originalName: post.original_name,
+            youtubeUrl: post.youtube_url || null
           }))
         );
       }
