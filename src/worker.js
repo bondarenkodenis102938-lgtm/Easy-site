@@ -233,7 +233,7 @@ export default {
 
  async function postPage(request, env, id) {
    const post = await env.DB.prepare(
-     `SELECT id, body, created_at, media_key, media_type, original_name
+     `SELECT id, body, created_at, media_key, media_type, original_name, youtube_url
       FROM posts
       WHERE id = ?
       LIMIT 1`
@@ -299,16 +299,36 @@ a{color:#222}
      ? url.origin + mediaPath
      : "";
 
+   const youtubeId = extractYouTubeId(post.youtube_url || "");
+   const youtubeEmbedUrl = youtubeId
+     ? "https://www.youtube.com/embed/" + encodeURIComponent(youtubeId) + "?controls=1&playsinline=1&rel=0"
+     : "";
+
    let media = "";
 
-   if (mediaPath && post.media_type === "image") {
+   if (youtubeEmbedUrl) {
+     media = `
+       <div class="youtube-wrap">
+         <iframe
+           class="youtube-player"
+           src="${escapeHtml(youtubeEmbedUrl)}"
+           title="YouTube видео"
+           frameborder="0"
+           allowfullscreen
+         ></iframe>
+       </div>
+       <p><a href="${escapeHtml(post.youtube_url)}" target="_blank" rel="noopener">Открыть на YouTube</a></p>
+     `;
+   }
+
+   if (!youtubeEmbedUrl && mediaPath && post.media_type === "image") {
      media = `
        <img class="media" src="${escapeHtml(mediaPath)}" alt="Фото из поста Lenivec — пост ${Number(post.id)}" loading="eager">
        <p><a href="${escapeHtml(mediaPath)}">Открыть фото отдельно</a></p>
      `;
    }
 
-   if (mediaPath && post.media_type === "video") {
+   if (!youtubeEmbedUrl && mediaPath && post.media_type === "video") {
      media = `
        <video class="media" src="${escapeHtml(mediaPath)}" controls preload="metadata"></video>
        <p><a href="${escapeHtml(mediaPath)}">Открыть видео отдельно</a></p>
@@ -351,6 +371,8 @@ header{background:#fff;padding:18px 20px;margin-bottom:18px;border:1px solid #dd
 .text{white-space:pre-wrap;line-height:1.5;margin-top:15px}
 .media{display:block;max-width:100%;margin-top:18px;border-radius:4px}
 video.media{width:100%}
+.youtube-wrap{position:relative;width:100%;aspect-ratio:16/9;margin-top:18px;background:#000}
+.youtube-player{position:absolute;inset:0;width:100%;height:100%;border:0}
 .actions{margin-top:18px}
 button,a{display:inline-block;margin-right:8px;padding:10px 16px;background:#fff;border:1px solid #999;color:#222;text-decoration:none;cursor:pointer;font:inherit}
 button:hover,a:hover{background:#eee}
@@ -445,6 +467,44 @@ document.addEventListener("keydown", (event) => {
 </script>
 </body>
 </html>`;
+ }
+
+ function extractYouTubeId(value) {
+   try {
+     const input = String(value || "").trim();
+
+     if (!input) {
+       return null;
+     }
+
+     const url = new URL(input);
+
+     if (
+       url.hostname !== "youtube.com" &&
+       url.hostname !== "www.youtube.com" &&
+       url.hostname !== "m.youtube.com" &&
+       url.hostname !== "youtu.be" &&
+       url.hostname !== "www.youtu.be"
+     ) {
+       return null;
+     }
+
+     let id = "";
+
+     if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") {
+       id = url.pathname.slice(1).split("/")[0];
+     } else if (url.pathname === "/watch") {
+       id = url.searchParams.get("v") || "";
+     } else if (url.pathname.startsWith("/shorts/")) {
+       id = url.pathname.slice("/shorts/".length).split("/")[0];
+     } else if (url.pathname.startsWith("/embed/")) {
+       id = url.pathname.slice("/embed/".length).split("/")[0];
+     }
+
+     return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+   } catch {
+     return null;
+   }
  }
 
  function escapeHtml(value) {
