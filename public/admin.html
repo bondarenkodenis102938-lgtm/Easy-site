@@ -110,6 +110,15 @@
         accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/ogg">
     </label>
 
+    <label>
+      Или ссылка на YouTube
+      <input id="youtubeUrl" type="url" placeholder="https://youtu.be/..." inputmode="url" autocomplete="off">
+    </label>
+
+    <p style="color:#666;font-size:13px;margin-top:-8px;">
+      Загрузи файл или вставь ссылку YouTube. Одновременно нельзя.
+    </p>
+
     <br><br>
 
     <button id="saveBtn">СОХРАНИТЬ</button>
@@ -134,6 +143,7 @@ const loginMessage = document.getElementById("loginMessage");
 
 const body = document.getElementById("body");
 const file = document.getElementById("file");
+const youtubeUrl = document.getElementById("youtubeUrl");
 const saveBtn = document.getElementById("saveBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const message = document.getElementById("message");
@@ -233,11 +243,21 @@ saveBtn.addEventListener("click", async () => {
     return;
   }
 
+  if (file.files.length > 0 && youtubeUrl.value.trim()) {
+    message.textContent = "Выбери либо файл, либо ссылку YouTube.";
+    message.className = "error";
+    return;
+  }
+
   const formData = new FormData();
   formData.append("body", text);
 
   if (file.files.length > 0) {
     formData.append("file", file.files[0]);
+  }
+
+  if (youtubeUrl.value.trim()) {
+    formData.append("youtubeUrl", youtubeUrl.value.trim());
   }
 
   saveBtn.disabled = true;
@@ -259,6 +279,7 @@ saveBtn.addEventListener("click", async () => {
 
     body.value = "";
     file.value = "";
+    youtubeUrl.value = "";
 
     message.textContent = "Запись сохранена.";
     message.className = "ok";
@@ -272,6 +293,38 @@ saveBtn.addEventListener("click", async () => {
     saveBtn.disabled = false;
   }
 });
+
+function youtubeEmbedUrl(value) {
+  try {
+    const url = new URL(value);
+
+    let id = "";
+
+    if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") {
+      id = url.pathname.slice(1).split("/")[0];
+    } else if (
+      url.hostname === "youtube.com" ||
+      url.hostname === "www.youtube.com" ||
+      url.hostname === "m.youtube.com"
+    ) {
+      if (url.pathname === "/watch") {
+        id = url.searchParams.get("v") || "";
+      } else if (url.pathname.startsWith("/shorts/")) {
+        id = url.pathname.slice("/shorts/".length).split("/")[0];
+      } else if (url.pathname.startsWith("/embed/")) {
+        id = url.pathname.slice("/embed/".length).split("/")[0];
+      }
+    }
+
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+      throw new Error("Invalid YouTube URL");
+    }
+
+    return "https://www.youtube.com/embed/" + encodeURIComponent(id) + "?controls=1&playsinline=1&rel=0";
+  } catch {
+    return "about:blank";
+  }
+}
 
 async function loadPosts() {
   posts.textContent = "Загрузка...";
@@ -304,6 +357,35 @@ async function loadPosts() {
 
       item.appendChild(dateElement);
       item.appendChild(textElement);
+
+      if (post.youtubeUrl) {
+        const wrap = document.createElement("div");
+        wrap.style.position = "relative";
+        wrap.style.width = "100%";
+        wrap.style.aspectRatio = "16 / 9";
+        wrap.style.marginTop = "12px";
+        wrap.style.background = "#000";
+
+        const iframe = document.createElement("iframe");
+        iframe.src = youtubeEmbedUrl(post.youtubeUrl);
+        iframe.title = "YouTube видео";
+        iframe.frameBorder = "0";
+        iframe.allowFullscreen = true;
+        iframe.style.position = "absolute";
+        iframe.style.inset = "0";
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+
+        wrap.appendChild(iframe);
+        item.appendChild(wrap);
+
+        const youtubeLink = document.createElement("a");
+        youtubeLink.href = post.youtubeUrl;
+        youtubeLink.target = "_blank";
+        youtubeLink.rel = "noopener";
+        youtubeLink.textContent = "Открыть на YouTube";
+        item.appendChild(youtubeLink);
+      }
 
       if (post.mediaUrl && post.mediaType === "image") {
         const img = document.createElement("img");
