@@ -42,6 +42,23 @@ export default {
         });
       }
 
+      // Получить последние YouTube-ссылки
+      if (url.pathname === "/api/youtube-history" && request.method === "GET") {
+        if (!(await isAuthed(request, env))) {
+          return json({ error: "Не авторизован" }, 401);
+        }
+
+        const { results } = await env.DB.prepare(
+          "SELECT id, url, created_at FROM youtube_links ORDER BY created_at DESC, id DESC LIMIT 5"
+        ).all();
+
+        return json(results.map((item) => ({
+          id: item.id,
+          url: item.url,
+          createdAt: item.created_at
+        })));
+      }
+
       // Получить все записи
       if (url.pathname === "/api/posts" && request.method === "GET") {
         const { results } = await env.DB.prepare(
@@ -652,6 +669,8 @@ async function createPost(request, env) {
 
     storedYouTubeUrl =
       "https://www.youtube.com/watch?v=" + youtubeId;
+
+    await rememberYouTubeLink(env, storedYouTubeUrl);
   }
 
   if (file instanceof File && file.size > 0) {
@@ -779,6 +798,8 @@ async function editPost(id, request, env) {
     }
 
     storedYouTubeUrl = "https://www.youtube.com/watch?v=" + youtubeId;
+
+    await rememberYouTubeLink(env, storedYouTubeUrl);
   }
 
   if (!body && !post.media_key && !storedYouTubeUrl) {
@@ -792,6 +813,30 @@ async function editPost(id, request, env) {
     .run();
 
   return json({ ok: true, id });
+}
+
+async function rememberYouTubeLink(env, url) {
+  if (!url) {
+    return;
+  }
+
+  await env.DB.prepare(
+    "DELETE FROM youtube_links WHERE url = ?"
+  )
+    .bind(url)
+    .run();
+
+  await env.DB.prepare(
+    "INSERT INTO youtube_links (url, created_at) VALUES (?, ?)"
+  )
+    .bind(url, Date.now())
+    .run();
+
+  await env.DB.prepare(
+    "DELETE FROM youtube_links WHERE id NOT IN (" +
+    "SELECT id FROM youtube_links ORDER BY created_at DESC, id DESC LIMIT 5)"
+  )
+    .run();
 }
 
 async function deletePost(id, env) {
