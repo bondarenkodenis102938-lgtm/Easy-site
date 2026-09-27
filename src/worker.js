@@ -73,6 +73,16 @@ export default {
         return await createPost(request, env);
       }
 
+      // Редактировать запись
+      const editMatch = url.pathname.match(/^\/api\/posts\/(\d+)$/);
+
+      if (editMatch && request.method === "PATCH") {
+        if (!(await isAuthed(request, env))) {
+          return json({ error: "Не авторизован" }, 401);
+        }
+
+        return await editPost(Number(editMatch[1]), request, env);
+      }
       // Удалить запись
       const deleteMatch = url.pathname.match(/^\/api\/posts\/(\d+)$/);
 
@@ -578,7 +588,7 @@ async function createPost(request, env) {
   const file = form.get("file");
   const youtubeUrl = String(form.get("youtubeUrl") || "").trim();
 
-  if (!body && !(file instanceof File)) {
+  if (!body && !(file instanceof File) && !youtubeUrl) {
     return json(
       { error: "Нужен текст или файл" },
       400
@@ -709,6 +719,54 @@ async function createPost(request, env) {
 // ============================
 // УДАЛЕНИЕ
 // ============================
+
+async function editPost(id, request, env) {
+  const post = await env.DB.prepare(
+    "SELECT id, body, media_key, youtube_url FROM posts WHERE id = ?"
+  )
+    .bind(id)
+    .first();
+
+  if (!post) {
+    return json({ error: "Запись не найдена" }, 404);
+  }
+
+  const form = await request.formData();
+  const body = String(form.get("body") || "").trim();
+  const youtubeUrl = String(form.get("youtubeUrl") || "").trim();
+
+  if (body.length > 20000) {
+    return json({ error: "Текст слишком длинный" }, 400);
+  }
+
+  let storedYouTubeUrl = null;
+
+  if (youtubeUrl) {
+    const youtubeId = extractYouTubeId(youtubeUrl);
+
+    if (!youtubeId) {
+      return json({ error: "Неверная ссылка YouTube" }, 400);
+    }
+
+    if (post.media_key) {
+      return json({ error: "У поста уже есть загруженный файл. Удали его перед добавлением YouTube." }, 400);
+    }
+
+    storedYouTubeUrl = "https://www.youtube.com/watch?v=" + youtubeId;
+  }
+
+  if (!body && !post.media_key && !storedYouTubeUrl) {
+    return json({ error: "У записи должен остаться текст, файл или YouTube-видео" }, 400);
+  }
+
+  await env.DB.prepare(
+    "UPDATE posts SET body = ?, youtube_url = ? WHERE id = ?"
+  )
+    .bind(body, storedYouTubeUrl, id)
+    .run();
+
+  return json({ ok: true, id });
+}
 
 async function deletePost(id, env) {
   const post = await env.DB.prepare(
